@@ -93,6 +93,12 @@ export default function Store() {
         ))}
       </div>
 
+      <div>
+        <h2>
+          See also
+        </h2>
+      </div>
+
       <Carousel
       opts={{
         align: "start",
