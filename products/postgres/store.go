@@ -8,9 +8,8 @@ import (
 	"strings"
 	"time"
 
-	mgpostgres "github.com/absmach/magistrala/pkg/postgres"
-
 	"github.com/absmach/magistrala/pkg/errors"
+	mgpostgres "github.com/absmach/magistrala/pkg/postgres"
 	"github.com/jackc/pgtype"
 	"github.com/jmoiron/sqlx"
 	"github.com/washykk/ui/products"
@@ -195,7 +194,7 @@ func (r *productRepo) Delete(ctx context.Context, productID string) error {
 	}
 
 	if rows, _ := result.RowsAffected(); rows == 0 {
-		return  errors.New("error")
+		return errors.New("error")
 	}
 
 	return nil
@@ -316,12 +315,12 @@ func toDBProductPage(pm products.ProductPageMeta) (dbProductPage, error) {
 	}
 
 	return dbProductPage{
-		Name:      pm.Name,
-		Metadata:  data,
-		Tag:       pm.Tag,
-		Total:     pm.Total,
-		Offset:    pm.Offset,
-		Limit:     pm.Limit,
+		Name:     pm.Name,
+		Metadata: data,
+		Tag:      pm.Tag,
+		Total:    pm.Total,
+		Offset:   pm.Offset,
+		Limit:    pm.Limit,
 	}, nil
 }
 
