@@ -1,0 +1,17 @@
+include:
+  - path:
+      - ./docker-compose.products.yml
+
+networks:
+  magistrala-base-net:
+    driver: bridge
+
+services:
+  next-app-dev:
+    extends:
+      file: docker-compose.prod.yml
+      service: next-app
+    volumes:
+      - ../:/app
+      - /app/.next
+      - /app/node_modules
