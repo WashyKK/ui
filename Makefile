@@ -97,7 +97,7 @@ latest: docker
 	$(call docker_push,latest)
 
 run_dev:
-	docker compose -f docker/docker-compose.dev.yml --env-file .env -p ${DOCKER_PROJECT} up
+	docker compose -f docker/docker-compose.dev.yml --env-file .env -p ${DOCKER_PROJECT} up -d
 
 run_prod:
 	docker compose -f docker/docker-compose.prod.yml --env-file .env -p ${DOCKER_PROJECT} up
