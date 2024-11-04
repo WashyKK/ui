@@ -1,4 +1,4 @@
-MG_DOCKER_IMAGE_NAME_PREFIX ?= ghcr.io/washykk/ui
+IMAGE_NAME_PREFIX ?= ghcr.io/washykk/ui
 SVC = products
 BUILD_DIR = build
 CGO_ENABLED ?= 0
@@ -7,7 +7,6 @@ GOARCH ?= amd64
 VERSION ?= $(shell git describe --abbrev=0 --tags || echo "none")
 COMMIT ?= $(shell git rev-parse HEAD)
 TIME ?= $(shell date +%F_%T)
-MOCKERY_VERSION=v2.43.0
 USER_REPO ?= $(shell git remote get-url origin | sed -e 's/.*\/\([^/]*\)\/\([^/]*\).*/\1_\2/' )
 empty:=
 space:= $(empty) $(empty)
@@ -16,11 +15,7 @@ DOCKER_PROJECT ?= $(shell echo $(subst $(space),,$(USER_REPO)) | tr -c -s '[:aln
 
 define compile_service
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) \
-	go build -ldflags "-s -w \
-	-X 'github.com/absmach/magistrala.BuildTime=$(TIME)' \
-	-X 'github.com/absmach/magistrala.Version=$(VERSION)' \
-	-X 'github.com/absmach/magistrala.Commit=$(COMMIT)'" \
-	-o ${BUILD_DIR}/$(SVC) products/cmd/main.go
+	go build -o ${BUILD_DIR}/$(SVC) products/cmd/main.go
 endef
 
 define make_dockers
@@ -32,13 +27,13 @@ define make_dockers
 		--build-arg VERSION=$(VERSION) \
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg TIME=$(TIME) \
-		--tag=$(MG_DOCKER_IMAGE_NAME_PREFIX)/$(SVC) \
+		--tag=$(IMAGE_NAME_PREFIX)/$(SVC) \
 		-f ./docker/products.prod.Dockerfile .
 
 	docker build \
 		--no-cache \
 		--build-arg SVC=ui \
-		--tag=$(MG_DOCKER_IMAGE_NAME_PREFIX)/ui \
+		--tag=$(IMAGE_NAME_PREFIX)/ui \
 		-f ./docker/ui.prod.Dockerfile .
 endef
 
@@ -46,13 +41,13 @@ define make_dockers_dev
 	docker build \
 		--no-cache \
 		--build-arg SVC=$(SVC) \
-		--tag=$(MG_DOCKER_IMAGE_NAME_PREFIX)/$(SVC) \
+		--tag=$(IMAGE_NAME_PREFIX)/$(SVC) \
 		-f ./docker/products.dev.Dockerfile ./build
 
-		docker build \
+	docker build \
 		--no-cache \
 		--build-arg SVC=ui \
-		--tag=$(MG_DOCKER_IMAGE_NAME_PREFIX)/ui \
+		--tag=$(IMAGE_NAME_PREFIX)/ui \
 		-f ./docker/ui.dev.Dockerfile .
 endef
 
@@ -90,7 +85,7 @@ dockers_dev:
 	$(call make_dockers_dev)
 
 define docker_push
-	docker push $(MG_DOCKER_IMAGE_NAME_PREFIX)/$(SVC):$(1)
+	docker push $(IMAGE_NAME_PREFIX)/$(SVC):$(1)
 endef
 
 latest: docker
@@ -103,4 +98,4 @@ run_prod:
 	docker compose -f docker/docker-compose.prod.yml --env-file .env -p ${DOCKER_PROJECT} up
 
 run:
-	${BUILD_DIR}/$(SVC)
+	docker compose -f docker/docker-compose.dev.yml --env-file .env -p ${DOCKER_PROJECT} up -d

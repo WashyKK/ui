@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import React from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/ui/app-sidebar"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/ui/app-sidebar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,8 +27,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <title>GeHarashim</title>
+        {/* Other head elements like meta tags or links can go here */}
+      </head>
       <body>
-        <SidebarProvider>
+        <SidebarProvider defaultOpen="true">
           <AppSidebar />
           <main>
             <SidebarTrigger />
