@@ -58,9 +58,6 @@ type listProductsReq struct {
 }
 
 func (req listProductsReq) validate() error {
-	if req.token == "" {
-		return errors.New("validation token")
-	}
 	if req.limit > MaxLimitSize || req.limit < 1 {
 		return errors.New("limit size")
 	}

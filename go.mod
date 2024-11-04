@@ -9,6 +9,7 @@ require (
 	github.com/go-kit/kit v0.13.0
 	github.com/jackc/pgtype v1.14.3
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/rs/cors v1.11.1
 	github.com/rubenv/sql-migrate v1.6.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0
 	golang.org/x/sync v0.7.0

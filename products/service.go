@@ -52,7 +52,30 @@ func (svc service) List(ctx context.Context, token string, pgm ProductPageMeta) 
 	if err != nil {
 		return ProductPage{}, err
 	}
-	return svc.products.RetrieveAll(ctx, pgm)
+	return ProductPage{
+		Products: []Product{
+			{
+				Name: "name",
+				ID: "ID",
+				Description: "descri",
+			},
+			{
+				Name: "name2",
+				ID: "ID",
+				Description: "descri",
+			},
+			{
+				Name: "name3",
+				ID: "ID",
+				Description: "descri",
+			},
+			{
+				Name: "name4",
+				ID: "ID",
+				Description: "descri",
+			},
+		},
+	}, nil
 }
 
 func (svc service) Update(ctx context.Context, token string, product Product) (Product, error) {

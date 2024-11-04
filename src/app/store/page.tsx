@@ -25,6 +25,8 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
+import Products from "@/components/products";
+
 interface Item {
   id: string;
   name: string;
@@ -40,111 +42,6 @@ const items: Item[] = [
     price: "$10.00",
     description: "Description for item one",
     imageUrl: "/screen.png",
-  },
-  {
-    id: "2",
-    name: "Item Two",
-    price: "$15.00",
-    description: "Description for item two",
-    imageUrl: "/images/item2.jpg",
-  },
-  {
-    id: "3",
-    name: "Item Three",
-    price: "$20.00",
-    description: "Description for item three",
-    imageUrl: "/images/item3.jpg",
-  },
-  {
-    id: "4",
-    name: "Item Four",
-    price: "$25.00",
-    description: "Description for item four",
-    imageUrl: "/images/item4.jpg",
-  },
-  {
-    id: "1",
-    name: "Item One",
-    price: "$10.00",
-    description: "Description for item one",
-    imageUrl: "/images/item1.jpg",
-  },
-  {
-    id: "2",
-    name: "Item Two",
-    price: "$15.00",
-    description: "Description for item two",
-    imageUrl: "/images/item2.jpg",
-  },
-  {
-    id: "3",
-    name: "Item Three",
-    price: "$20.00",
-    description: "Description for item three",
-    imageUrl: "/images/item3.jpg",
-  },
-  {
-    id: "4",
-    name: "Item Four",
-    price: "$25.00",
-    description: "Description for item four",
-    imageUrl: "/images/item4.jpg",
-  },
-  {
-    id: "1",
-    name: "Item One",
-    price: "$10.00",
-    description: "Description for item one",
-    imageUrl: "/images/item1.jpg",
-  },
-  {
-    id: "2",
-    name: "Item Two",
-    price: "$15.00",
-    description: "Description for item two",
-    imageUrl: "/images/item2.jpg",
-  },
-  {
-    id: "3",
-    name: "Item Three",
-    price: "$20.00",
-    description: "Description for item three",
-    imageUrl: "/images/item3.jpg",
-  },
-  {
-    id: "4",
-    name: "Item Four",
-    price: "$25.00",
-    description: "Description for item four",
-    imageUrl: "/images/item4.jpg",
-  },
-  {
-    id: "1",
-    name: "Item One",
-    price: "$10.00",
-    description: "Description for item one",
-    imageUrl: "/images/item1.jpg",
-  },
-  {
-    id: "2",
-    name: "Item Two",
-    price: "$15.00",
-    description: "Description for item two",
-    imageUrl: "/images/item2.jpg",
-  },
-  {
-    id: "3",
-    name: "Item Three",
-    price: "$20.00",
-    description: "Description for item three",
-    imageUrl: "/images/item3.jpg",
-  },
-  {
-    id: "4",
-    name: "Item Four",
-    price: "$25.00",
-    description: "Description for item four",
-    imageUrl: "/images/item4.jpg",
   },
 ];
 
@@ -197,6 +94,11 @@ export default function Store() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      <div>
+        <h1 className="text-2xl font-bold">Products</h1>
+        <Products />
       </div>
 
       <div>
