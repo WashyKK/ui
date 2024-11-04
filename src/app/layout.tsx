@@ -4,7 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import React from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/ui/app-sidebar"
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,12 +26,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <main>
-        <SidebarTrigger />
-        {children}
-      </main>
-    </SidebarProvider>
+    <html lang="en">
+      <body>
+        <SidebarProvider>
+          <AppSidebar />
+          <main>
+            <SidebarTrigger />
+            {children}
+          </main>
+        </SidebarProvider>
+      </body>
+    </html>
   );
 }
