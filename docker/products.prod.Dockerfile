@@ -10,8 +10,9 @@ WORKDIR /go/src/github.com/washykk/ui
 COPY . .
 RUN go mod tidy
 RUN apk update \
-  && apk add make\
+  && apk add make upx\
   && make $SVC \
+  && upx build/washykk-$SVC \
   && mv build/$SVC /exe
 
 FROM scratch

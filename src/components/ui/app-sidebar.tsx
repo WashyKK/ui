@@ -1,4 +1,4 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
+import { ShoppingCart, Home, School, LogIn, Settings } from "lucide-react";
 
 import {
   Sidebar,
@@ -19,25 +19,25 @@ const items = [
     icon: Home,
   },
   {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
+    title: "Academy",
+    url: "learn",
+    icon: School,
   },
   {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
-    icon: Search,
+    title: "Store",
+    url: "store",
+    icon: ShoppingCart,
   },
   {
     title: "Settings",
     url: "#",
     icon: Settings,
   },
+  {
+    title: "Login",
+    url: "#",
+    icon:LogIn,
+  }
 ];
 
 export function AppSidebar() {
