@@ -37,16 +37,6 @@ interface Item {
   imageUrl: string;
 }
 
-const items: Item[] = [
-  {
-    id: "1",
-    name: "Item One",
-    price: "$10.00",
-    description: "Description for item one",
-    imageUrl: "/screen.png",
-  },
-];
-
 export default function Store() {
   return (
     <div className="container mx-auto p-4">
@@ -72,32 +62,7 @@ export default function Store() {
           {/* Add more categories as needed */}
         </NavigationMenuList>
       </NavigationMenu>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-        {items.map((item) => (
-          <Card key={item.id} className="w-full">
-            <Image
-              src={item.imageUrl}
-              alt={item.name}
-              className="w-full h-48 object-cover"
-            />
-            <CardContent>
-              <CardTitle>{item.name}</CardTitle>
-              <CardDescription>{item.description}</CardDescription>
-              <CardFooter>
-                <span className="text-lg font-bold">{item.price}</span>
-                <Link
-                  href={`/product/${item.id}`}
-                  className="text-blue-500 hover:underline ml-2"
-                >
-                  View Details
-                </Link>
-              </CardFooter>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
+      
       <div>
         <h1 className="text-2xl font-bold">Products</h1>
         <Products />
@@ -107,6 +72,7 @@ export default function Store() {
         <h2>See also</h2>
       </div>
 
+      <div className="flex justify-center mt-4">
       <Carousel
         opts={{
           align: "start",
@@ -129,6 +95,7 @@ export default function Store() {
         <CarouselPrevious />
         <CarouselNext />
       </Carousel>
+      </div>
     </div>
   );
 }

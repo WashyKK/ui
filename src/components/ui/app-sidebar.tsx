@@ -33,7 +33,7 @@ import {
 const items = [
   {
     title: "Home",
-    url: "#",
+    url: "/",
     icon: Home,
   },
   {
@@ -48,12 +48,12 @@ const items = [
   },
   {
     title: "Settings",
-    url: "#",
+    url: "settings",
     icon: Settings,
   },
   {
     title: "Login",
-    url: "#",
+    url: "login",
     icon: LogIn,
   },
 ];
