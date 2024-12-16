@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
+
 import {
   Card,
   CardContent,
@@ -74,7 +76,7 @@ export default function Store() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
         {items.map((item) => (
           <Card key={item.id} className="w-full">
-            <img
+            <Image
               src={item.imageUrl}
               alt={item.name}
               className="w-full h-48 object-cover"
