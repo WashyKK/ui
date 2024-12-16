@@ -14,6 +14,7 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/washykk/ui/products"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+    "github.com/rs/cors"
 )
 
 const (
@@ -72,7 +73,14 @@ func MakeHandler(svc products.Service, r *chi.Mux, logger *slog.Logger, instance
 
 	r.Get("/health", magistrala.Health("products", instanceID))
 
-	return r
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(r)
+
+	return handler
 }
 
 func decodeCreateProductReq(_ context.Context, r *http.Request) (interface{}, error) {

@@ -31,11 +31,11 @@ export default function RootLayout({
         <title>GeHarashim</title>
         {/* Other head elements like meta tags or links can go here */}
       </head>
-      <body>
+      <body className="min-h-screen flex">
         <SidebarProvider defaultOpen="true">
           <AppSidebar />
-          <main>
-            <SidebarTrigger />
+          <SidebarTrigger />
+          <main className="flex-1 flex justify-center items-center">
             {children}
           </main>
         </SidebarProvider>

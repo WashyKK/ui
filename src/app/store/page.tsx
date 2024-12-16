@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
+
 import {
   Card,
   CardContent,
@@ -25,6 +27,8 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
+import Products from "@/components/products";
+
 interface Item {
   id: string;
   name: string;
@@ -32,121 +36,6 @@ interface Item {
   description: string;
   imageUrl: string;
 }
-
-const items: Item[] = [
-  {
-    id: "1",
-    name: "Item One",
-    price: "$10.00",
-    description: "Description for item one",
-    imageUrl: "/screen.png",
-  },
-  {
-    id: "2",
-    name: "Item Two",
-    price: "$15.00",
-    description: "Description for item two",
-    imageUrl: "/images/item2.jpg",
-  },
-  {
-    id: "3",
-    name: "Item Three",
-    price: "$20.00",
-    description: "Description for item three",
-    imageUrl: "/images/item3.jpg",
-  },
-  {
-    id: "4",
-    name: "Item Four",
-    price: "$25.00",
-    description: "Description for item four",
-    imageUrl: "/images/item4.jpg",
-  },
-  {
-    id: "1",
-    name: "Item One",
-    price: "$10.00",
-    description: "Description for item one",
-    imageUrl: "/images/item1.jpg",
-  },
-  {
-    id: "2",
-    name: "Item Two",
-    price: "$15.00",
-    description: "Description for item two",
-    imageUrl: "/images/item2.jpg",
-  },
-  {
-    id: "3",
-    name: "Item Three",
-    price: "$20.00",
-    description: "Description for item three",
-    imageUrl: "/images/item3.jpg",
-  },
-  {
-    id: "4",
-    name: "Item Four",
-    price: "$25.00",
-    description: "Description for item four",
-    imageUrl: "/images/item4.jpg",
-  },
-  {
-    id: "1",
-    name: "Item One",
-    price: "$10.00",
-    description: "Description for item one",
-    imageUrl: "/images/item1.jpg",
-  },
-  {
-    id: "2",
-    name: "Item Two",
-    price: "$15.00",
-    description: "Description for item two",
-    imageUrl: "/images/item2.jpg",
-  },
-  {
-    id: "3",
-    name: "Item Three",
-    price: "$20.00",
-    description: "Description for item three",
-    imageUrl: "/images/item3.jpg",
-  },
-  {
-    id: "4",
-    name: "Item Four",
-    price: "$25.00",
-    description: "Description for item four",
-    imageUrl: "/images/item4.jpg",
-  },
-  {
-    id: "1",
-    name: "Item One",
-    price: "$10.00",
-    description: "Description for item one",
-    imageUrl: "/images/item1.jpg",
-  },
-  {
-    id: "2",
-    name: "Item Two",
-    price: "$15.00",
-    description: "Description for item two",
-    imageUrl: "/images/item2.jpg",
-  },
-  {
-    id: "3",
-    name: "Item Three",
-    price: "$20.00",
-    description: "Description for item three",
-    imageUrl: "/images/item3.jpg",
-  },
-  {
-    id: "4",
-    name: "Item Four",
-    price: "$25.00",
-    description: "Description for item four",
-    imageUrl: "/images/item4.jpg",
-  },
-];
 
 export default function Store() {
   return (
@@ -173,36 +62,17 @@ export default function Store() {
           {/* Add more categories as needed */}
         </NavigationMenuList>
       </NavigationMenu>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-        {items.map((item) => (
-          <Card key={item.id} className="w-full">
-            <img
-              src={item.imageUrl}
-              alt={item.name}
-              className="w-full h-48 object-cover"
-            />
-            <CardContent>
-              <CardTitle>{item.name}</CardTitle>
-              <CardDescription>{item.description}</CardDescription>
-              <CardFooter>
-                <span className="text-lg font-bold">{item.price}</span>
-                <Link
-                  href={`/product/${item.id}`}
-                  className="text-blue-500 hover:underline ml-2"
-                >
-                  View Details
-                </Link>
-              </CardFooter>
-            </CardContent>
-          </Card>
-        ))}
+      
+      <div>
+        <h1 className="text-2xl font-bold">Products</h1>
+        <Products />
       </div>
 
       <div>
         <h2>See also</h2>
       </div>
 
+      <div className="flex justify-center mt-4">
       <Carousel
         opts={{
           align: "start",
@@ -225,6 +95,7 @@ export default function Store() {
         <CarouselPrevious />
         <CarouselNext />
       </Carousel>
+      </div>
     </div>
   );
 }
