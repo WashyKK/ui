@@ -47,6 +47,11 @@ const items = [
     icon: ShoppingCart,
   },
   {
+    title: "Admin",
+    url: "admin",
+    icon: User,
+  },
+  {
     title: "Settings",
     url: "settings",
     icon: Settings,
