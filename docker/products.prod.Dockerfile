@@ -6,11 +6,11 @@ ARG VERSION
 ARG COMMIT
 ARG TIME
 
-WORKDIR /go/src/github.com/washykk/ui
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
-RUN go mod tidy
-RUN apk update \
-  && apk add make upx\
+RUN apk add --no-cache make upx \
   && make $SVC \
   && upx build/washykk-$SVC \
   && mv build/$SVC /exe

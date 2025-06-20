@@ -14,46 +14,43 @@ space:= $(empty) $(empty)
 DOCKER_PROJECT ?= $(shell echo $(subst $(space),,$(USER_REPO)) | tr -c -s '[:alnum:][=-=]' '_' | tr '[:upper:]' '[:lower:]')
 
 define compile_service
-	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) \
-	go build -o ${BUILD_DIR}/$(SVC) products/cmd/main.go
+        mkdir -p ${BUILD_DIR} && \
+        CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) \
+        go build -o ${BUILD_DIR}/$(SVC) products/cmd/main.go
 endef
 
 define make_dockers
-	docker build \
-		--no-cache \
-		--build-arg SVC=$(SVC) \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg GOARM=$(GOARM) \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg COMMIT=$(COMMIT) \
-		--build-arg TIME=$(TIME) \
-		--tag=$(IMAGE_NAME_PREFIX)/$(SVC) \
-		-f ./docker/products.prod.Dockerfile .
+       docker build --pull \
+               --build-arg SVC=$(SVC) \
+               --build-arg GOARCH=$(GOARCH) \
+               --build-arg GOARM=$(GOARM) \
+               --build-arg VERSION=$(VERSION) \
+               --build-arg COMMIT=$(COMMIT) \
+               --build-arg TIME=$(TIME) \
+               --tag=$(IMAGE_NAME_PREFIX)/$(SVC) \
+               -f ./docker/products.prod.Dockerfile .
 
-	docker build \
-		--no-cache \
-		--build-arg SVC=ui \
-		--tag=$(IMAGE_NAME_PREFIX)/ui \
-		-f ./docker/ui.prod.Dockerfile .
+       docker build --pull \
+               --build-arg SVC=ui \
+               --tag=$(IMAGE_NAME_PREFIX)/ui \
+               -f ./docker/ui.prod.Dockerfile .
 endef
 
 define make_dockers_dev
-	docker build \
-		--no-cache \
-		--build-arg SVC=$(SVC) \
-		--tag=$(IMAGE_NAME_PREFIX)/$(SVC) \
-		-f ./docker/products.dev.Dockerfile ./build
+       docker build --pull \
+               --build-arg SVC=$(SVC) \
+               --tag=$(IMAGE_NAME_PREFIX)/$(SVC) \
+               -f ./docker/products.dev.Dockerfile ./build
 
-	docker build \
-		--no-cache \
-		--build-arg SVC=ui \
-		--tag=$(IMAGE_NAME_PREFIX)/ui \
-		-f ./docker/ui.dev.Dockerfile .
+       docker build --pull \
+               --build-arg SVC=ui \
+               --tag=$(IMAGE_NAME_PREFIX)/ui \
+               -f ./docker/ui.dev.Dockerfile .
 endef
 
 all: products
 
-.PHONY: products dockers dockers_dev run_docker run mocks
+.PHONY: products dockers dockers_dev clean cleandocker install mocks test lint run_dev run_prod run latest
 
 clean:
 	rm -rf ${BUILD_DIR}

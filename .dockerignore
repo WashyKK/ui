@@ -1,0 +1,9 @@
+# Global patterns to exclude from Docker build context
+.git
+node_modules
+.next
+build
+docker-compose.dev.yml
+docker-compose.prod.yml
+*.log
+.env*
