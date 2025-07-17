@@ -98,7 +98,7 @@ export default function Home() {
         <h2 className="text-3xl font-bold">Ready to Build the Future?</h2>
         <p className="mt-2">Contact us today or join the Elffie Academy.</p>
         <div className="mt-4 flex justify-center gap-4">
-          <Link href="/contact" className="bg-white text-black px-6 py-2 rounded-lg hover:bg-gray-200">
+          <Link href="#" className="bg-white text-black px-6 py-2 rounded-lg hover:bg-gray-200">
             Contact Us
           </Link>
           <Link href="/academy" className="border border-white px-6 py-2 rounded-lg hover:bg-white hover:text-black transition">
