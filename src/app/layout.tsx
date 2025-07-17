@@ -16,7 +16,7 @@ const items = [
 ];
 
 export const metadata: Metadata = {
-  title: "Ge Harashim",
+  title: "Elffie Technologies",
   description: "Embedded experts!",
 };
 
@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>GeHarashim</title>
+        <title>Elffie Technologies</title>
         {/* Other head elements like meta tags or links can go here */}
       </head>
       <body className="min-h-screen flex">
