@@ -15,9 +15,9 @@ export default function Home() {
       {/* Features Section */}
       <section className="grid gap-10 md:grid-cols-3 text-center">
         {[
-          { src: "/humanoid.svg", title: "Humanoid", desc: "Mimics human behavior and interactions." },
-          { src: "/mobile.svg", title: "Mobile", desc: "Autonomous outdoor & indoor navigation." },
-          { src: "/industrial.svg", title: "Industrial", desc: "Optimized for robust factory automation." },
+          { src: "/humanoid.png", title: "Humanoid", desc: "Mimics human behavior and interactions." },
+          { src: "/mobile.png", title: "Mobile", desc: "Autonomous outdoor & indoor navigation." },
+          { src: "/industrial.png", title: "Industrial", desc: "Optimized for robust factory automation." },
         ].map(({ src, title, desc }) => (
           <div key={title} className="flex flex-col items-center">
             <Image src={src} alt={`${title} robots`} width={200} height={200} />
