@@ -54,14 +54,44 @@ export default function Home() {
       </section>
 
       {/* Testimonials */}
-      <section className="max-w-4xl w-full text-center">
-        <h2 className="text-2xl font-bold mb-4">What People Say</h2>
-        <blockquote className="italic text-gray-600 dark:text-gray-400">
-          Elffie Robotics gave our startup the edge we needed to automate complex logistics—absolutely reliable.
-          <br />
-          <span className="font-semibold block mt-2">— CTO, GreenPort AI</span>
-        </blockquote>
+      <section className="max-w-5xl w-full text-center mx-auto px-4 py-12">
+        <h2 className="text-3xl font-bold mb-8">What Our Partners Say</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow">
+            <p className="text-gray-700 dark:text-gray-300 italic">
+              “Elffie Robotics has been instrumental in helping us prototype fast and scale smart systems for emerging markets.”
+            </p>
+            <p className="mt-4 font-semibold text-gray-900 dark:text-white">
+              — Mr. Steve Nyaga, CEO, BrainGrid Tech
+            </p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow">
+            <p className="text-gray-700 dark:text-gray-300 italic">
+              “Their technical agility and focus on autonomous robotics sets a new standard in climate-smart automation.”
+            </p>
+            <p className="mt-4 font-semibold text-gray-900 dark:text-white">
+              — Felix Wanyoike, CTO, Qualis Labs
+            </p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow">
+            <p className="text-gray-700 dark:text-gray-300 italic">
+              “Reliable, visionary, and execution-focused—Elffie has been our go-to partner for scalable robotics integrations.”
+            </p>
+            <p className="mt-4 font-semibold text-gray-900 dark:text-white">
+              — Rodney Osodo, CEO, Qualis Labs
+            </p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow">
+            <p className="text-gray-700 dark:text-gray-300 italic">
+              “Working with Elffie enabled our engineering programs to embed advanced robotics into real-world applications.”
+            </p>
+            <p className="mt-4 font-semibold text-gray-900 dark:text-white">
+              — Heritage Anziya, Programs Lead, GeHarashim Engineering
+            </p>
+          </div>
+        </div>
       </section>
+
 
       {/* CTA */}
       <section className="w-full bg-black text-white py-10 text-center rounded-xl">
