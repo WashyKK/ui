@@ -1,11 +1,7 @@
 import {
-  ShoppingCart,
   Home,
   School,
-  LogIn,
-  Settings,
   ChevronUp,
-  User,
 } from "lucide-react";
 
 import {
@@ -41,26 +37,6 @@ const items = [
     url: "learn",
     icon: School,
   },
-  {
-    title: "Store",
-    url: "store",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Admin",
-    url: "admin",
-    icon: User,
-  },
-  {
-    title: "Settings",
-    url: "settings",
-    icon: Settings,
-  },
-  {
-    title: "Login",
-    url: "login",
-    icon: LogIn,
-  },
 ];
 
 export function AppSidebar() {
@@ -69,7 +45,7 @@ export function AppSidebar() {
       <SidebarHeader />
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Ge-Harashim</SidebarGroupLabel>
+          <SidebarGroupLabel>Elffie Technologies</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (

@@ -23,7 +23,7 @@ export function LoginForm({
               </div>
               <span className="sr-only">Acme Inc.</span>
             </a>
-            <h1 className="text-xl font-bold">Welcome to Ge-Harashim Org.</h1>
+            <h1 className="text-xl font-bold">Welcome to Elffie Technologies.</h1>
             <div className="text-center text-sm">
               Don&apos;t have an account?{" "}
               <a href="#" className="underline underline-offset-4">
