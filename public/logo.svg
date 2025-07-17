@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120" viewBox="0 0 200 120">
+  <rect width="200" height="120" rx="15" fill="#0d9488"/>
+  <rect x="70" y="10" width="60" height="20" rx="4" fill="#0f172a"/>
+  <rect x="40" y="40" width="120" height="60" rx="10" fill="#0f172a"/>
+  <circle cx="80" cy="70" r="10" fill="#fafafa"/>
+  <circle cx="120" cy="70" r="10" fill="#fafafa"/>
+  <rect x="75" y="90" width="50" height="8" rx="4" fill="#fafafa"/>
+  <text x="100" y="115" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Elffie Robotics</text>
+</svg>

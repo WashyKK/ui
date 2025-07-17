@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {
   Home,
   School,
@@ -34,7 +35,7 @@ const items = [
   },
   {
     title: "Academy",
-    url: "learn",
+    url: "/academy",
     icon: School,
   },
 ];
@@ -42,10 +43,12 @@ const items = [
 export function AppSidebar() {
   return (
     <Sidebar>
-      <SidebarHeader />
+      <SidebarHeader>
+        <Image src="/logo.svg" alt="Logo" width={80} height={40} />
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Elffie Technologies</SidebarGroupLabel>
+        <SidebarGroupLabel>Elffie Robotics</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
