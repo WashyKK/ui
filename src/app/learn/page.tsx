@@ -18,8 +18,8 @@ export default function Learn() {
           >
             By{" "}
             <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
+              src="/logo.svg"
+              alt="Elffie Robotics Logo"
               className="dark:invert"
               width={100}
               height={24}
