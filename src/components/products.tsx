@@ -34,10 +34,11 @@ const Products: React.FC = () => {
           throw new Error(`HTTP error! Status: ${response.ok}`);
         }
         console.log(response)
-        const data: Product[] = await response.json();
+        const data: { products: Product[] } = await response.json();
         setProducts(data.products);
       } catch (err) {
-        setError(err.message);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
