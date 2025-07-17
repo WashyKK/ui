@@ -32,7 +32,7 @@ export default function RootLayout({
         {/* Other head elements like meta tags or links can go here */}
       </head>
       <body className="min-h-screen flex">
-        <SidebarProvider defaultOpen="true">
+        <SidebarProvider defaultOpen>
           <AppSidebar />
           <SidebarTrigger />
           <main className="flex-1 flex justify-center items-center">

@@ -5,6 +5,8 @@ export interface Product {
     price: number;
     stock: number;      // Add stock property
     category: string;   // Add category property
+    description?: string;
+    imageUrl?: string;
     createdAt: string;  // Change to camelCase for consistency
     updatedAt: string;  // Change to camelCase for consistency
   }
