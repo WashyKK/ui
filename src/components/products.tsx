@@ -1,5 +1,6 @@
 // components/Products.tsx
 import React from "react";
+import Image from "next/image";
 import { Product } from "@/components/types";
 import Link from "next/link";
 import {
@@ -54,10 +55,13 @@ const Products: React.FC = () => {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {products.map((product) => (
         <Card key={product.id} className="w-full">
-          <img
-            src={product.imageUrl}
+          <Image
+            src={product.imageUrl || "/placeholder.png"}
             alt={product.name}
+            width={800}
+            height={384}
             className="w-full h-48 object-cover"
+            priority={false}
           />
           <CardContent>
             <CardTitle>{product.name}</CardTitle>

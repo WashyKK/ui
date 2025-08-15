@@ -27,6 +27,61 @@ export default function Home() {
         ))}
       </section>
 
+      {/* Research & News (moving) */}
+      <section className="w-full max-w-5xl">
+        <h2 className="text-2xl font-bold mb-4 text-center">Current Research & News</h2>
+        <div className="marquee rounded-xl border bg-white/60 dark:bg-zinc-800/60">
+          <div className="marquee__track gap-4 p-4">
+            {[
+              {
+                title: "Zero‑Shot Learning for Robot Policies",
+                body:
+                  "Exploring foundation models and vision‑language pretraining to generalize skills to unseen tasks without additional labels.",
+              },
+              {
+                title: "Jetson Orin NX Experiments",
+                body:
+                  "Benchmarking TensorRT pipelines, INT8 quantization, and on‑device SLAM for real‑time autonomy on edge compute.",
+              },
+              {
+                title: "Sim‑to‑Real Transfer",
+                body:
+                  "Domain randomization in Isaac Gym and RL fine‑tuning to bridge the gap from simulation to physical robots.",
+              },
+              {
+                title: "Self‑Supervised Visual Navigation",
+                body:
+                  "Contrastive pretraining and trajectory cloning to enable map‑free navigation in dynamic indoor spaces.",
+              },
+              {
+                title: "Grasping With Few Shots",
+                body:
+                  "Prompted grasp synthesis with geometric priors to handle novel objects using minimal demonstrations.",
+              },
+              {
+                title: "Robotics News",
+                body:
+                  "Weekly: open‑weight VLM updates, improved ORB‑SLAM variants, and embedded CUDA kernels for faster depth fusion.",
+              },
+            ].flatMap((item, i, arr) => [
+              // Duplicate content for seamless marquee loop
+              <div key={`a-${i}`} className="marquee__item">
+                <article className="h-full w-80 md:w-96 rounded-lg p-4 bg-white dark:bg-zinc-900 shadow-sm">
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{item.body}</p>
+                </article>
+              </div>,
+              <div key={`b-${i}`} className="marquee__item">
+                <article className="h-full w-80 md:w-96 rounded-lg p-4 bg-white dark:bg-zinc-900 shadow-sm">
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{item.body}</p>
+                </article>
+              </div>,
+            ])}
+          </div>
+        </div>
+      </section>
+
       {/* Use Cases */}
       <section className="max-w-4xl w-full text-center">
         <h2 className="text-2xl font-bold mb-4">Applications</h2>
@@ -114,5 +169,4 @@ export default function Home() {
     </main>
   );
 }
-
 

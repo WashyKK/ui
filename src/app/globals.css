@@ -83,3 +83,23 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Simple marquee-style scrolling for research/news section */
+@keyframes marquee-x {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee {
+  overflow: hidden;
+}
+
+.marquee__track {
+  display: flex;
+  width: max-content;
+  animation: marquee-x 40s linear infinite;
+}
+
+.marquee__item {
+  min-width: 320px;
+}
