@@ -1,9 +1,13 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+This is a [Next.js](https://nextjs.org/) app.
 
-## Full local docker deployment
+## Run Locally (UI only)
 
-To run the products server together with ui inside the docker container, run:
+- Install deps: `npm ci`
+- Dev server: `npm run dev` (opens on `http://localhost:3000`)
+- Production build: `npm run build`
+- Production start: `npm run start`
+- Lint: `npm run lint`
 
-```bash
-make && make dockers_dev && make run_dev
-```
+Notes:
+- Environment variables are loaded from `.env` if present. The app does not require a backend to run; the store page uses mock products.
+- To change the dev port: `npm run dev -- -p 4000`.

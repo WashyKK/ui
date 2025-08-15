@@ -1,54 +1,54 @@
 // components/Products.tsx
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Product } from "@/components/types";
 import Link from "next/link";
 import {
-    Card,
-    CardContent,
-    CardTitle,
-    CardDescription,
-    CardFooter,
+  Card,
+  CardContent,
+  CardTitle,
+  CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 
-const limit = 10; // Set your desired limit
-const offset = 0; // Set your desired offset
+// UI-only mock data (backend removed)
+const mockProducts: Product[] = [
+  {
+    id: "p1",
+    name: "Explorer Bot",
+    description: "All-terrain mobile robot",
+    price: 3999,
+    stock: 12,
+    category: "Mobile",
+    imageUrl: "/mobile.png",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "p2",
+    name: "Factory Arm",
+    description: "Compact industrial manipulator",
+    price: 6499,
+    stock: 5,
+    category: "Industrial",
+    imageUrl: "/industrial.png",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "p3",
+    name: "Humanoid Alpha",
+    description: "Research-grade humanoid platform",
+    price: 14999,
+    stock: 2,
+    category: "Humanoid",
+    imageUrl: "/humanoid.png",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
 
 const Products: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        console.log("eh!!!!!!!!!!!!!!!!!!!!!!")
-        const response = await fetch(`http://localhost:9097/products/?limit=${limit}&offset=${offset}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-        });
-        console.log(response.ok)
-        console.log("eh!!!!!!!!!!!!!!!!!!!!!!")
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.ok}`);
-        }
-        console.log(response)
-        const data: { products: Product[] } = await response.json();
-        setProducts(data.products);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error fetching products: {error}</div>;
+  const products = mockProducts;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
