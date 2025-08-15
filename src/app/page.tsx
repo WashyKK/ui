@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ShieldCheck, Rocket, Headphones, Gauge } from "lucide-react";
 import ResearchCarousel from "@/components/research-carousel";
+import Reveal from "@/components/reveal";
+import HeroCTAs from "@/components/hero-ctas";
 
 export default function Home() {
   return (
@@ -17,6 +19,7 @@ export default function Home() {
             We design, integrate, and operate robotics platforms for critical environments —
             from humanoid R&D to industrial automation — with reliability, governance, and safety at the core.
           </p>
+          <HeroCTAs />
         </div>
       </section>
 
@@ -67,7 +70,7 @@ export default function Home() {
         <h2 className="text-2xl font-semibold text-center mb-2">Capabilities</h2>
         <div className="h-0.5 w-24 bg-accent mx-auto mb-6 rounded-full" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
+          <Reveal className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
             <div className="flex items-center gap-3">
               <ShieldCheck className="text-accent" />
               <div>
@@ -75,8 +78,8 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">Platform uptime</p>
               </div>
             </div>
-          </div>
-          <div className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
+          </Reveal>
+          <Reveal className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
             <div className="flex items-center gap-3">
               <Rocket className="text-accent" />
               <div>
@@ -84,8 +87,8 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">Field deployments</p>
               </div>
             </div>
-          </div>
-          <div className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
+          </Reveal>
+          <Reveal className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
             <div className="flex items-center gap-3">
               <Headphones className="text-accent" />
               <div>
@@ -93,8 +96,8 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">Enterprise support</p>
               </div>
             </div>
-          </div>
-          <div className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
+          </Reveal>
+          <Reveal className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
             <div className="flex items-center gap-3">
               <Gauge className="text-accent" />
               <div>
@@ -102,7 +105,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">Control loop latency</p>
               </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -158,7 +161,7 @@ export default function Home() {
         <h2 className="text-3xl font-semibold">Ready to Build the Future?</h2>
         <p className="mt-2 text-muted-foreground">Let’s scope your use case and roadmap.</p>
         <div className="mt-6 flex justify-center gap-4">
-          <Link href="#" className="px-6 py-2 rounded-lg bg-accent text-white hover:opacity-90 transition">Contact Sales</Link>
+          <Link href="mailto:washingtonkigan@gmail.com?subject=Sales%20Inquiry%20%E2%80%94%20Elffie%20Robotics" className="px-6 py-2 rounded-lg bg-accent text-white hover:opacity-90 transition">Contact Sales</Link>
           <Link href="/academy" className="px-6 py-2 rounded-lg border border-accent text-accent hover:bg-accent hover:text-white transition">Join Academy</Link>
         </div>
       </section>

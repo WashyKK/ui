@@ -29,22 +29,23 @@ const items: Item[] = [
 
 export default function ResearchCarousel() {
   const [api, setApi] = React.useState<CarouselApi | null>(null);
+  const [paused, setPaused] = React.useState(false);
 
   React.useEffect(() => {
-    if (!api) return;
+    if (!api || paused) return;
     const id = setInterval(() => {
       api.scrollNext();
-    }, 4000);
+    }, 3000);
     return () => clearInterval(id);
-  }, [api]);
+  }, [api, paused]);
 
   return (
-    <div className="relative">
+    <div className="relative" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <Carousel opts={{ align: "start", loop: true }} setApi={setApi} className="w-full">
         <CarouselContent>
           {items.map((item, idx) => (
             <CarouselItem key={idx} className="md:basis-1/2 lg:basis-1/3">
-              <article className="h-full w-full rounded-lg p-4 bg-white dark:bg-zinc-900 border shadow-sm">
+              <article className="h-full w-full rounded-lg p-4 bg-white dark:bg-zinc-900 border shadow-sm transition-transform transition-shadow duration-200 hover:-translate-y-[2px] hover:shadow-md">
                 <h3 className="font-semibold">{item.title}</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{item.body}</p>
               </article>
@@ -57,4 +58,3 @@ export default function ResearchCarousel() {
     </div>
   );
 }
-

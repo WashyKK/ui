@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
 import {
   Card,
@@ -40,6 +41,12 @@ interface Item {
 export default function Store() {
   return (
     <div className="container mx-auto p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Store</h1>
+        <Link href="/admin/login">
+          <Button variant="outline">Admin Login</Button>
+        </Link>
+      </div>
       <NavigationMenu>
         <NavigationMenuList>
           {/* Example category links */}
@@ -64,7 +71,7 @@ export default function Store() {
       </NavigationMenu>
       
       <div>
-        <h1 className="text-2xl font-bold">Products</h1>
+        <h2 className="text-xl font-semibold">Products</h2>
         <Products />
       </div>
 
