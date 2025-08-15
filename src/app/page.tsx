@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ShieldCheck, Rocket, Headphones, Gauge } from "lucide-react";
+import ResearchCarousel from "@/components/research-carousel";
 
 export default function Home() {
   return (
@@ -60,6 +62,50 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Capabilities */}
+      <section className="w-full max-w-5xl">
+        <h2 className="text-2xl font-semibold text-center mb-2">Capabilities</h2>
+        <div className="h-0.5 w-24 bg-accent mx-auto mb-6 rounded-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="text-accent" />
+              <div>
+                <p className="text-2xl font-semibold">99.95%</p>
+                <p className="text-sm text-muted-foreground">Platform uptime</p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
+            <div className="flex items-center gap-3">
+              <Rocket className="text-accent" />
+              <div>
+                <p className="text-2xl font-semibold">50+</p>
+                <p className="text-sm text-muted-foreground">Field deployments</p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
+            <div className="flex items-center gap-3">
+              <Headphones className="text-accent" />
+              <div>
+                <p className="text-2xl font-semibold">24/7</p>
+                <p className="text-sm text-muted-foreground">Enterprise support</p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl border bg-white dark:bg-zinc-900 p-5">
+            <div className="flex items-center gap-3">
+              <Gauge className="text-accent" />
+              <div>
+                <p className="text-2xl font-semibold">{"< 150ms"}</p>
+                <p className="text-sm text-muted-foreground">Control loop latency</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials */}
       <section className="max-w-5xl w-full text-center mx-auto px-4 py-12">
         <h2 className="text-3xl font-semibold mb-2">What Our Partners Say</h2>
@@ -100,41 +146,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Research & News (moving) */}
+      {/* Research & News (auto-advancing carousel) */}
       <section className="w-full max-w-5xl">
-        <h2 className="text-2xl font-bold mb-4 text-center">Current Research & News</h2>
-        <div className="marquee rounded-2xl border bg-white/60 dark:bg-zinc-800/60">
-          <div className="marquee__track gap-4 p-4">
-            {[
-              { title: "Zero‑Shot Policy Learning", body: "Foundation models + VLM pretraining to generalize skills without task‑specific labels." },
-              { title: "Jetson Orin NX Benchmarks", body: "INT8 quantization, TensorRT pipelines, and real‑time SLAM on edge compute." },
-              { title: "Sim‑to‑Real Transfer", body: "Domain randomization in Isaac Gym with on‑robot RL fine‑tuning for stability." },
-              { title: "Self‑Supervised Navigation", body: "Contrastive pretraining and trajectory cloning for map‑free navigation indoors." },
-              { title: "GRASP: Few‑Shot Manipulation", body: "Prompted grasp synthesis using geometric priors on novel objects with minimal demos." },
-              { title: "Safety & Compliance", body: "Operational governance with ISO 10218/TS 15066 guidelines and risk assessment playbooks." },
-              { title: "Perception: Multi‑View Fusion", body: "Faster depth fusion and 3D occupancy mapping with CUDA‑accelerated pipelines." },
-              { title: "Planning With LLMs", body: "Task decomposition and tool‑use for embodied agents with structured constraints." },
-              { title: "ROS 2 Stack Updates", body: "Jazzy/Iron upgrades, improved QoS profiles, and deterministic control loops." },
-              { title: "Fleet Ops & MLOps", body: "Over‑the‑air updates, dataset curation, eval gates, and rollback strategies for robots." },
-              { title: "Tactile + Vision", body: "Sensor fusion for robust manipulation under occlusion and variable lighting." },
-              { title: "Warehouse AMRs", body: "Traffic management, mission scheduling, and SLAM robustness in mixed‑traffic aisles." },
-            ].flatMap((item, i) => [
-              // Duplicate content for seamless marquee loop
-              <div key={`a-${i}`} className="marquee__item">
-                <article className="h-full w-80 md:w-96 rounded-lg p-4 bg-white dark:bg-zinc-900 shadow-sm">
-                  <h3 className="font-semibold">{item.title}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{item.body}</p>
-                </article>
-              </div>,
-              <div key={`b-${i}`} className="marquee__item">
-                <article className="h-full w-80 md:w-96 rounded-lg p-4 bg-white dark:bg-zinc-900 shadow-sm">
-                  <h3 className="font-semibold">{item.title}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{item.body}</p>
-                </article>
-              </div>,
-            ])}
-          </div>
-        </div>
+        <h2 className="text-2xl font-semibold text-center mb-2">Current Research & News</h2>
+        <div className="h-0.5 w-24 bg-accent mx-auto mb-6 rounded-full" />
+        <ResearchCarousel />
       </section>
 
       {/* CTA */}
@@ -149,7 +165,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="text-sm text-gray-500 mt-12">
-        © {new Date().getFullYear()} Elffie Robotics. All rights reserved.
+        © {new Date().getFullYear()} Elffie Robotics. All rights reserved. · <a className="underline" href="/team">Team</a>
       </footer>
     </main>
   );
