@@ -18,6 +18,7 @@ export default function AdminForm() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name?: string } | null>(null);
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +98,7 @@ export default function AdminForm() {
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between">
         <h1 className="mb-4 text-2xl font-bold">Admin — Create Product</h1>
-        <Button variant="outline" onClick={logout}>Logout</Button>
+        <Button variant="outline" onClick={() => setConfirmLogout(true)}>Logout</Button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
         <div>
@@ -212,6 +213,15 @@ export default function AdminForm() {
         variant="destructive"
         onCancel={() => setPendingDelete(null)}
         onConfirm={doRemove}
+      />
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Sign out?"
+        description="You will be logged out of the admin session."
+        confirmLabel="Logout"
+        variant="destructive"
+        onCancel={() => setConfirmLogout(false)}
+        onConfirm={logout}
       />
     </div>
   );

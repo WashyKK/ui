@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/carousel";
 
 import Products from "@/components/products";
+import Reveal from "@/components/reveal";
 
 interface Item {
   id: string;
@@ -40,13 +41,18 @@ interface Item {
 
 export default function Store() {
   return (
-    <div className="container mx-auto p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Store</h1>
-        <Link href="/admin/login">
-          <Button variant="outline">Admin Login</Button>
-        </Link>
-      </div>
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
+      <section className="rounded-2xl border bg-gradient-to-b from-white to-gray-50 dark:from-zinc-900 dark:to-zinc-900/40 p-6 mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Elffie Store</h1>
+            <p className="text-sm text-muted-foreground mt-1">Research platforms, manipulators, and mobile systems</p>
+          </div>
+          <Link href="/admin/login">
+            <Button variant="outline">Admin Login</Button>
+          </Link>
+        </div>
+      </section>
       <NavigationMenu>
         <NavigationMenuList>
           {/* Example category links */}
@@ -70,39 +76,17 @@ export default function Store() {
         </NavigationMenuList>
       </NavigationMenu>
       
-      <div>
+      <section className="mt-6">
         <h2 className="text-xl font-semibold">Products</h2>
+        <div className="h-0.5 w-24 bg-accent rounded-full my-3" />
         <Products />
-      </div>
+      </section>
 
       <div>
         <h2>See also</h2>
       </div>
 
-      <div className="flex justify-center mt-4">
-      <Carousel
-        opts={{
-          align: "start",
-        }}
-        className="w-full max-w-sm"
-      >
-        <CarouselContent>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-              <div className="p-1">
-                <Card>
-                  <CardContent className="flex aspect-square items-center justify-center p-6">
-                    <span className="text-3xl font-semibold">{index + 1}</span>
-                  </CardContent>
-                </Card>
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
-      </Carousel>
-      </div>
+      {/* Removed bottom carousel / see also section */}
     </div>
   );
 }
