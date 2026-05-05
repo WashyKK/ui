@@ -1,9 +1,10 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import React from "react";
 import TopNav from "@/components/top-nav";
+import CartDrawer from "@/components/cart-drawer";
+import { CartProvider } from "@/context/cart";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,8 +18,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head />
       <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
-        <TopNav />
-        <main className="mx-auto max-w-7xl px-4 sm:px-6 py-8">{children}</main>
+        <CartProvider>
+          <TopNav />
+          <main className="mx-auto max-w-7xl px-4 sm:px-6 py-8">{children}</main>
+          <CartDrawer />
+        </CartProvider>
       </body>
     </html>
   );

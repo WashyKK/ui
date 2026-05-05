@@ -25,16 +25,10 @@ function StockBadge({ stock }: { stock: number }) {
   );
 }
 
-export default async function ProductPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function ProductPage({ params }: { params: { id: string } }) {
   const { data: p, error } = await supabaseServer
     .from("products")
-    .select(
-      "id, name, description, price, stock, category, image_url, datasheet_url, created_at, updated_at"
-    )
+    .select("id, name, description, price, stock, category, image_url, datasheet_url, created_at, updated_at")
     .eq("id", params.id)
     .single();
 
@@ -43,21 +37,29 @@ export default async function ProductPage({
   const price = Number(p.price);
   const stock = Number(p.stock ?? 0);
 
+  // Build a Product object to pass to client components
+  const product = {
+    id: p.id,
+    name: p.name,
+    description: p.description ?? "",
+    price,
+    stock,
+    category: p.category ?? "",
+    imageUrl: p.image_url ?? undefined,
+    datasheetUrl: p.datasheet_url ?? undefined,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at,
+  };
+
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground transition-colors">
-          Home
-        </Link>
+        <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
         <ChevronRight className="h-3.5 w-3.5 shrink-0" />
-        <Link href="/store" className="hover:text-foreground transition-colors">
-          Store
-        </Link>
+        <Link href="/store" className="hover:text-foreground transition-colors">Store</Link>
         <ChevronRight className="h-3.5 w-3.5 shrink-0" />
-        <span className="text-foreground font-medium truncate max-w-[200px]">
-          {p.name}
-        </span>
+        <span className="text-foreground font-medium truncate max-w-[200px]">{p.name}</span>
       </nav>
 
       {/* Main content */}
@@ -65,14 +67,7 @@ export default async function ProductPage({
         {/* Image */}
         <div className="rounded-2xl border overflow-hidden bg-gray-50 dark:bg-zinc-800 aspect-square relative">
           {p.image_url ? (
-            <Image
-              src={p.image_url}
-              alt={p.name}
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
-              priority
-            />
+            <Image src={p.image_url} alt={p.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" priority />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               <Package className="h-24 w-24 text-muted-foreground opacity-20" />
@@ -82,33 +77,23 @@ export default async function ProductPage({
 
         {/* Details */}
         <div className="space-y-5">
-          {/* Header */}
           <div className="space-y-2">
             {p.category && (
-              <p className="text-xs uppercase tracking-widest text-accent font-medium">
-                {p.category}
-              </p>
+              <p className="text-xs uppercase tracking-widest text-accent font-medium">{p.category}</p>
             )}
             <h1 className="text-3xl font-semibold tracking-tight">{p.name}</h1>
             <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold tabular-nums">
-                ${price.toFixed(2)}
-              </span>
+              <span className="text-3xl font-bold tabular-nums">${price.toFixed(2)}</span>
               <StockBadge stock={stock} />
             </div>
           </div>
 
-          {/* Divider */}
           <div className="h-px bg-border" />
 
-          {/* Description */}
           {p.description && (
-            <p className="text-sm text-muted-foreground leading-7">
-              {p.description}
-            </p>
+            <p className="text-sm text-muted-foreground leading-7">{p.description}</p>
           )}
 
-          {/* Specs row */}
           <div className="grid grid-cols-2 gap-3 rounded-xl border bg-gray-50 dark:bg-zinc-800/50 p-4 text-sm">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Category</p>
@@ -120,8 +105,8 @@ export default async function ProductPage({
             </div>
           </div>
 
-          {/* Actions */}
-          <ProductActions productId={p.id} stock={stock} />
+          {/* Add to Cart */}
+          <ProductActions product={product} />
 
           {/* Datasheet */}
           {p.datasheet_url && (
@@ -134,19 +119,12 @@ export default async function ProductPage({
                 <p className="text-xs text-muted-foreground mt-0.5">Technical specifications — PDF</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href={p.datasheet_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-md border text-sm font-medium hover:bg-muted transition-colors"
-                >
+                <a href={p.datasheet_url} target="_blank" rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-md border text-sm font-medium hover:bg-muted transition-colors">
                   View
                 </a>
-                <a
-                  href={p.datasheet_url}
-                  download
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity"
-                >
+                <a href={p.datasheet_url} download
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity">
                   <Download className="h-3.5 w-3.5" />
                   Download
                 </a>
@@ -154,11 +132,7 @@ export default async function ProductPage({
             </div>
           )}
 
-          {/* Back link */}
-          <Link
-            href="/store"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
-          >
+          <Link href="/store" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4">
             ← Back to Store
           </Link>
         </div>

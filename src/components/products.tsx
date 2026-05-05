@@ -3,11 +3,11 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { X, Package, AlertCircle, ShoppingCart, Lock, FileText } from "lucide-react";
+import { X, Package, AlertCircle, Lock, FileText } from "lucide-react";
 import { Product } from "@/components/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import BuyButton from "@/components/buy-button";
+import AddToCartButton from "@/components/add-to-cart-button";
 
 interface Props {
   products: Product[];
@@ -209,11 +209,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                   className="shrink-0 hidden sm:block"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <BuyButton
-                    productId={product.id}
-                    disabled={product.stock === 0}
-                    size="sm"
-                  />
+                  <AddToCartButton product={product} quantity={1} size="sm" />
                 </div>
               </div>
             </button>
@@ -345,11 +341,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                   </div>
                 )}
                 <div className="flex-1 min-w-[140px]">
-                  <BuyButton
-                    productId={selected.id}
-                    quantity={qty}
-                    disabled={selected.stock === 0}
-                  />
+                  <AddToCartButton product={selected} quantity={qty} />
                 </div>
                 <Link
                   href={`/product/${selected.id}`}
