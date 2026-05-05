@@ -1,13 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    // Allow images only from Google Drive/CDN variants
-    domains: [
-      'drive.google.com',
-      'lh3.googleusercontent.com',
-      'lh4.googleusercontent.com',
-      'lh5.googleusercontent.com',
-      'lh6.googleusercontent.com',
+    remotePatterns: [
+      // Google Drive / user content
+      { protocol: "https", hostname: "drive.google.com" },
+      { protocol: "https", hostname: "*.googleusercontent.com" },
+      // Supabase Storage
+      { protocol: "https", hostname: "*.supabase.co" },
+      { protocol: "https", hostname: "*.supabase.in" },
+      // Common image CDNs
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "cdn.jsdelivr.net" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
+      // Catch-all for any HTTPS image source used in products
+      { protocol: "https", hostname: "**" },
     ],
   },
 };
