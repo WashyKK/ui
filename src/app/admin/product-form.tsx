@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import ConfirmDialog from "@/components/confirm-dialog";
 import { FileText, Upload, X, ImageIcon } from "lucide-react";
 
+interface Category { id: string; name: string; }
+
 // ── shared helpers ────────────────────────────────────────────────────────────
 
 async function uploadFile(endpoint: string, file: File): Promise<string> {
@@ -140,6 +142,7 @@ export default function AdminForm() {
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
   const [imageUrl, setImageUrl] = useState("");
   const [datasheetFile, setDatasheetFile] = useState<File | null>(null);
   const [datasheetUploading, setDatasheetUploading] = useState(false);
@@ -243,7 +246,13 @@ export default function AdminForm() {
     if (res.ok) { setEditingId(null); load(); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories || []))
+      .catch(() => {});
+  }, []);
 
   const logout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -251,9 +260,9 @@ export default function AdminForm() {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Admin — Create Product</h1>
+        <h1 className="text-2xl font-bold">Create Product</h1>
         <Button variant="outline" onClick={() => setConfirmLogout(true)}>Logout</Button>
       </div>
 
@@ -276,7 +285,17 @@ export default function AdminForm() {
         </div>
         <div>
           <Label htmlFor="category">Category</Label>
-          <Input id="category" value={category} onChange={(e) => setCategory(e.target.value)} />
+          <select
+            id="category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="">— Select a category —</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.name}>{c.name}</option>
+            ))}
+          </select>
         </div>
         <div>
           <Label>Product Image</Label>
@@ -362,9 +381,18 @@ export default function AdminForm() {
                         : <>{p.stock}</>}
                     </td>
                     <td className="py-2 pr-4">
-                      {editingId === p.id
-                        ? <Input defaultValue={p.category || ""} onChange={(e) => (p.category = e.target.value)} />
-                        : <>{p.category || "—"}</>}
+                      {editingId === p.id ? (
+                        <select
+                          defaultValue={p.category || ""}
+                          onChange={(e) => (p.category = e.target.value)}
+                          className="h-8 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="">— none —</option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.name}>{c.name}</option>
+                          ))}
+                        </select>
+                      ) : <>{p.category || "—"}</>}
                     </td>
                     <td className="py-2 pr-4">
                       {editingId === p.id ? (

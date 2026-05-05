@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
-import AdminForm from "./product-form";
 import Link from "next/link";
+import AdminTabs from "./admin-tabs";
 
 export default function AdminPage() {
   const isAdmin = cookies().get("admin")?.value === "1";
@@ -15,5 +15,5 @@ export default function AdminPage() {
       </div>
     );
   }
-  return <AdminForm />;
+  return <AdminTabs />;
 }
