@@ -1,13 +1,14 @@
 // components/types.ts
 export interface Product {
-    id: string;          // Change to string based on the API response
+    id: string;
     name: string;
     price: number;
-    stock: number;      // Add stock property
-    category: string;   // Add category property
+    stock: number;
+    category: string;
     description?: string;
     imageUrl?: string;
-    createdAt: string;  // Change to camelCase for consistency
-    updatedAt: string;  // Change to camelCase for consistency
+    datasheetUrl?: string;
+    createdAt: string;
+    updatedAt: string;
   }
   

@@ -16,6 +16,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (typeof body.stock === "number") update.stock = body.stock;
   if (typeof body.category === "string") update.category = body.category;
   if (typeof body.imageUrl === "string") update.image_url = body.imageUrl;
+  if (typeof body.datasheetUrl === "string") update.datasheet_url = body.datasheetUrl;
 
   const { data, error } = await supabaseServer
     .from("products")

@@ -5,7 +5,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 export async function GET() {
   const { data, error } = await supabaseServer
     .from("products")
-    .select("id, name, description, price, stock, category, image_url, created_at, updated_at")
+    .select("id, name, description, price, stock, category, image_url, datasheet_url, created_at, updated_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     stock: body.stock ?? 0,
     category: body.category ?? null,
     image_url: body.imageUrl ?? null,
+    datasheet_url: body.datasheetUrl ?? null,
   }).select("*").single();
 
   if (error) {

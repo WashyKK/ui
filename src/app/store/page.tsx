@@ -39,6 +39,7 @@ export default function Store() {
             stock: Number(p.stock ?? 0),
             category: p.category ?? "",
             imageUrl: p.image_url ?? undefined,
+            datasheetUrl: p.datasheet_url ?? undefined,
             createdAt: p.created_at,
             updatedAt: p.updated_at,
           }))

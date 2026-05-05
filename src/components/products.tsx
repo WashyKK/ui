@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { X, Package, AlertCircle, ShoppingCart, Lock } from "lucide-react";
+import { X, Package, AlertCircle, ShoppingCart, Lock, FileText } from "lucide-react";
 import { Product } from "@/components/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -190,6 +190,12 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                   </p>
                   <div className="mt-2.5 flex items-center gap-3 flex-wrap">
                     <StockBadge stock={product.stock} />
+                    {product.datasheetUrl && (
+                      <span className="flex items-center gap-1 text-xs text-accent font-medium">
+                        <FileText className="h-3.5 w-3.5" />
+                        Datasheet
+                      </span>
+                    )}
                     <Link
                       href={`/product/${product.id}`}
                       onClick={(e) => e.stopPropagation()}
@@ -250,13 +256,21 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                   <span className="text-xl font-bold tabular-nums">
                     ${product.price.toFixed(2)}
                   </span>
-                  <Link
-                    href={`/product/${product.id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-xs underline underline-offset-4 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Details
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    {product.datasheetUrl && (
+                      <span className="flex items-center gap-1 text-xs text-accent font-medium">
+                        <FileText className="h-3.5 w-3.5" />
+                        Datasheet
+                      </span>
+                    )}
+                    <Link
+                      href={`/product/${product.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs underline underline-offset-4 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Details
+                    </Link>
+                  </div>
                 </div>
               </div>
             </button>
@@ -346,6 +360,27 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                 </Link>
               </div>
 
+              {selected.datasheetUrl && (
+                <div className="flex items-center gap-3 pt-1 border-t">
+                  <FileText className="h-4 w-4 text-accent shrink-0" />
+                  <span className="text-sm font-medium">Datasheet</span>
+                  <a
+                    href={selected.datasheetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-accent underline underline-offset-4 hover:opacity-80"
+                  >
+                    View PDF
+                  </a>
+                  <a
+                    href={selected.datasheetUrl}
+                    download
+                    className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                  >
+                    Download
+                  </a>
+                </div>
+              )}
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
                 <Lock className="h-3 w-3" />
                 Secure checkout powered by Stripe

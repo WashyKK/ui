@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, Package } from "lucide-react";
+import { ChevronRight, Package, FileText, Download } from "lucide-react";
 import { supabaseServer } from "@/lib/supabaseServer";
 import ProductActions from "@/components/product-actions";
 
@@ -33,7 +33,7 @@ export default async function ProductPage({
   const { data: p, error } = await supabaseServer
     .from("products")
     .select(
-      "id, name, description, price, stock, category, image_url, created_at, updated_at"
+      "id, name, description, price, stock, category, image_url, datasheet_url, created_at, updated_at"
     )
     .eq("id", params.id)
     .single();
@@ -122,6 +122,37 @@ export default async function ProductPage({
 
           {/* Actions */}
           <ProductActions productId={p.id} stock={stock} />
+
+          {/* Datasheet */}
+          {p.datasheet_url && (
+            <div className="rounded-xl border bg-gray-50 dark:bg-zinc-800/50 p-4 flex items-center gap-4">
+              <div className="rounded-lg bg-accent/10 p-2.5 shrink-0">
+                <FileText className="h-5 w-5 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Product Datasheet</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Technical specifications — PDF</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={p.datasheet_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-md border text-sm font-medium hover:bg-muted transition-colors"
+                >
+                  View
+                </a>
+                <a
+                  href={p.datasheet_url}
+                  download
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* Back link */}
           <Link
