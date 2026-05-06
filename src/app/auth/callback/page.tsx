@@ -38,10 +38,11 @@ function CallbackInner() {
         body: JSON.stringify({ email: data.session.user.email }),
       });
 
+      const loginData = await res.json().catch(() => ({}));
       const from = searchParams.get("from");
       if (res.ok) {
-        // Admin login page → go to admin panel; store sign-in → stay on store
-        router.push(from === "admin" ? "/admin" : "/store");
+        // Admins and managers always go to /admin so they discover the panel immediately
+        router.push("/admin");
       } else {
         if (from === "admin") {
           await supabase.auth.signOut();

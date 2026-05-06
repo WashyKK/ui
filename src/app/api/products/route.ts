@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { canManageProducts } from "@/lib/auth-check";
 
 export async function GET() {
   const { data, error } = await supabaseServer
@@ -15,9 +15,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  // Simple admin gate via cookie set by /api/admin/login
-  const isAdmin = cookies().get("admin")?.value === "1";
-  if (!isAdmin) {
+  if (!canManageProducts()) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

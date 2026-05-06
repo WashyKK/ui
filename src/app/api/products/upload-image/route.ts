@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { canManageProducts } from "@/lib/auth-check";
 
 const ALLOWED = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 
 export async function POST(req: Request) {
-  const isAdmin = cookies().get("admin")?.value === "1";
-  if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageProducts()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let form: FormData;
   try {

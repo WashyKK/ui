@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { canManageProducts } from "@/lib/auth-check";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const isAdmin = cookies().get("admin")?.value === "1";
-  if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageProducts()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -30,8 +29,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  const isAdmin = cookies().get("admin")?.value === "1";
-  if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageProducts()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { error } = await supabaseServer
     .from("products")
@@ -41,4 +39,3 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
-

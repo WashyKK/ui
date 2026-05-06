@@ -42,9 +42,12 @@ export default function TopNav() {
           <Link href="/team" className={linkClass("/team")}>Team</Link>
           <a href="mailto:washingtonkigan@gmail.com?subject=Inquiry%20%E2%80%94%20Elffie%20Robotics" className="text-accent">Contact</a>
           {(isAdmin || isManager) && (
-            <Link href="/admin" className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+            <Link
+              href="/admin"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent/10 text-accent hover:bg-accent hover:text-white transition-colors text-sm font-medium"
+            >
               <Settings className="h-3.5 w-3.5" />
-              Admin
+              {isAdmin ? "Admin" : "Manage Products"}
             </Link>
           )}
         </nav>
@@ -191,8 +194,13 @@ export default function TopNav() {
                   <Link href="/team" className="py-2 hover:underline" onClick={() => setOpen(false)}>Team</Link>
                   <a href="mailto:washingtonkigan@gmail.com?subject=Inquiry%20%E2%80%94%20Elffie%20Robotics" className="py-2 text-accent" onClick={() => setOpen(false)}>Contact</a>
                   {(isAdmin || isManager) && (
-                    <Link href="/admin" className="py-2 flex items-center gap-1.5 text-muted-foreground" onClick={() => setOpen(false)}>
-                      <Settings className="h-3.5 w-3.5" /> Admin
+                    <Link
+                      href="/admin"
+                      className="py-2 flex items-center gap-1.5 font-medium text-accent"
+                      onClick={() => setOpen(false)}
+                    >
+                      <Settings className="h-3.5 w-3.5" />
+                      {isAdmin ? "Admin" : "Manage Products"}
                     </Link>
                   )}
                   {/* Currency switcher */}
