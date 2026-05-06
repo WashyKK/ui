@@ -11,13 +11,22 @@ import { useCurrency, type Currency } from "@/context/currency";
 
 const CURRENCIES: Currency[] = ["USD", "KES", "EUR"];
 
-export default function TopNav() {
+interface TopNavProps {
+  initialIsAdmin?: boolean;
+  initialIsManager?: boolean;
+}
+
+export default function TopNav({ initialIsAdmin = false, initialIsManager = false }: TopNavProps) {
   const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const { totalItems, openCart } = useCart();
-  const { user, loading, isAdmin, isManager, signIn, signOut } = useUser();
+  const { user, loading, isAdmin: ctxAdmin, isManager: ctxManager, signIn, signOut } = useUser();
   const { currency, setCurrency } = useCurrency();
+
+  // Server-side cookie read wins on first paint; context takes over after async check
+  const isAdmin = ctxAdmin || initialIsAdmin;
+  const isManager = ctxManager || initialIsManager;
 
   const linkClass = (href: string) =>
     `${pathname.startsWith(href) ? "text-foreground underline underline-offset-4" : "text-muted-foreground hover:text-foreground"}`;

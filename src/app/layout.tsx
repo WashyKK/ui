@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import React from "react";
+import { cookies } from "next/headers";
 import TopNav from "@/components/top-nav";
 import CartDrawer from "@/components/cart-drawer";
 import { CartProvider } from "@/context/cart";
@@ -16,6 +17,10 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const jar = cookies();
+  const serverIsAdmin = jar.get("admin")?.value === "1";
+  const serverIsManager = jar.get("manager")?.value === "1";
+
   return (
     <html lang="en">
       <head />
@@ -23,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CurrencyProvider>
         <UserProvider>
           <CartProvider>
-            <TopNav />
+            <TopNav initialIsAdmin={serverIsAdmin} initialIsManager={serverIsManager} />
             <main className="mx-auto max-w-7xl px-4 sm:px-6 py-8">{children}</main>
             <CartDrawer />
           </CartProvider>
