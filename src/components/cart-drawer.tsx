@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/cart";
 import { useUser } from "@/context/user";
+import { useCurrency } from "@/context/currency";
 import { SHIPPING_ZONES, getShippingRate, getShippingLabel } from "@/lib/shipping";
 
 type MpesaState =
@@ -26,6 +27,7 @@ const USD_TO_KES = Number(process.env.NEXT_PUBLIC_MPESA_USD_TO_KES_RATE ?? 130);
 export default function CartDrawer() {
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice, isOpen, closeCart } = useCart();
   const { user } = useUser();
+  const { format } = useCurrency();
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -199,7 +201,7 @@ export default function CartDrawer() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold tabular-nums">${(product.price * quantity).toFixed(2)}</p>
+                    <p className="text-sm font-semibold tabular-nums">{format(product.price * quantity)}</p>
                     <button
                       onClick={() => removeFromCart(product.id)}
                       className="mt-1 text-muted-foreground hover:text-destructive transition-colors"
@@ -259,17 +261,17 @@ export default function CartDrawer() {
               <div className="space-y-1.5 py-2 border-t border-b">
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Subtotal</span>
-                  <span className="tabular-nums">${totalPrice.toFixed(2)}</span>
+                  <span className="tabular-nums">{format(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Shipping {shippingZone ? `— ${getShippingLabel(shippingZone)}` : ""}</span>
                   <span className="tabular-nums">
-                    {shippingZone ? `$${shippingRate.toFixed(2)}` : "—"}
+                    {shippingZone ? format(shippingRate) : "—"}
                   </span>
                 </div>
                 <div className="flex justify-between font-semibold text-base pt-1">
                   <span>Total</span>
-                  <span className="tabular-nums">${orderTotal.toFixed(2)}</span>
+                  <span className="tabular-nums">{format(orderTotal)}</span>
                 </div>
               </div>
 

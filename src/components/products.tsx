@@ -8,6 +8,7 @@ import { Product } from "@/components/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import AddToCartButton from "@/components/add-to-cart-button";
+import { useCurrency } from "@/context/currency";
 
 interface Props {
   products: Product[];
@@ -114,6 +115,7 @@ function ListSkeleton() {
 const Products: React.FC<Props> = ({ products, loading, error, view = "grid", onRetry }) => {
   const [selected, setSelected] = useState<Product | null>(null);
   const [qty, setQty] = useState(1);
+  const { format } = useCurrency();
 
   const openModal = (p: Product) => {
     setSelected(p);
@@ -182,7 +184,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                       )}
                     </div>
                     <span className="text-lg font-bold shrink-0 tabular-nums">
-                      ${product.price.toFixed(2)}
+                      {format(product.price)}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -250,7 +252,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                 </p>
                 <div className="flex items-center justify-between pt-2">
                   <span className="text-xl font-bold tabular-nums">
-                    ${product.price.toFixed(2)}
+                    {format(product.price)}
                   </span>
                   <div className="flex items-center gap-3">
                     {product.datasheetUrl && (
@@ -307,7 +309,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                   <StockBadge stock={selected.stock} />
                 </div>
                 <span className="text-2xl font-bold tabular-nums shrink-0">
-                  ${selected.price.toFixed(2)}
+                  {format(selected.price)}
                 </span>
               </div>
 

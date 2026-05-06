@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ChevronRight, Package, FileText, Download } from "lucide-react";
 import { supabaseServer } from "@/lib/supabaseServer";
 import ProductActions from "@/components/product-actions";
+import { PriceDisplay } from "@/components/price-display";
 
 function StockBadge({ stock }: { stock: number }) {
   if (stock === 0)
@@ -83,7 +84,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
             )}
             <h1 className="text-3xl font-semibold tracking-tight">{p.name}</h1>
             <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold tabular-nums">${price.toFixed(2)}</span>
+              <PriceDisplay usd={price} className="text-3xl font-bold tabular-nums" />
               <StockBadge stock={stock} />
             </div>
           </div>

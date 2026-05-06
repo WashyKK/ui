@@ -4,16 +4,20 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, ShoppingCart, LogIn, LogOut, User } from "lucide-react";
+import { Menu, ShoppingCart, LogIn, LogOut, User, Settings } from "lucide-react";
 import { useCart } from "@/context/cart";
 import { useUser } from "@/context/user";
+import { useCurrency, type Currency } from "@/context/currency";
+
+const CURRENCIES: Currency[] = ["USD", "KES", "EUR"];
 
 export default function TopNav() {
   const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const { totalItems, openCart } = useCart();
-  const { user, loading, signIn, signOut } = useUser();
+  const { user, loading, isAdmin, isManager, signIn, signOut } = useUser();
+  const { currency, setCurrency } = useCurrency();
 
   const linkClass = (href: string) =>
     `${pathname.startsWith(href) ? "text-foreground underline underline-offset-4" : "text-muted-foreground hover:text-foreground"}`;
@@ -37,6 +41,12 @@ export default function TopNav() {
           <Link href="/academy" className={linkClass("/academy")}>Academy</Link>
           <Link href="/team" className={linkClass("/team")}>Team</Link>
           <a href="mailto:washingtonkigan@gmail.com?subject=Inquiry%20%E2%80%94%20Elffie%20Robotics" className="text-accent">Contact</a>
+          {(isAdmin || isManager) && (
+            <Link href="/admin" className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+              <Settings className="h-3.5 w-3.5" />
+              Admin
+            </Link>
+          )}
         </nav>
 
         {/* Right side actions */}
@@ -54,6 +64,23 @@ export default function TopNav() {
               </span>
             )}
           </button>
+
+          {/* Currency switcher — desktop */}
+          <div className="hidden md:flex items-center rounded-md border overflow-hidden text-xs">
+            {CURRENCIES.map((c) => (
+              <button
+                key={c}
+                onClick={() => setCurrency(c)}
+                className={`px-2.5 py-1.5 transition-colors ${
+                  currency === c
+                    ? "bg-accent text-white font-semibold"
+                    : "hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
 
           {/* User account — desktop */}
           {!loading && (
@@ -163,6 +190,26 @@ export default function TopNav() {
                   <Link href="/academy" className="py-2 hover:underline" onClick={() => setOpen(false)}>Academy</Link>
                   <Link href="/team" className="py-2 hover:underline" onClick={() => setOpen(false)}>Team</Link>
                   <a href="mailto:washingtonkigan@gmail.com?subject=Inquiry%20%E2%80%94%20Elffie%20Robotics" className="py-2 text-accent" onClick={() => setOpen(false)}>Contact</a>
+                  {(isAdmin || isManager) && (
+                    <Link href="/admin" className="py-2 flex items-center gap-1.5 text-muted-foreground" onClick={() => setOpen(false)}>
+                      <Settings className="h-3.5 w-3.5" /> Admin
+                    </Link>
+                  )}
+                  {/* Currency switcher */}
+                  <div className="pt-2 border-t flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground mr-1">Currency:</span>
+                    {CURRENCIES.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => { setCurrency(c); setOpen(false); }}
+                        className={`text-xs px-2 py-1 rounded border transition-colors ${
+                          currency === c ? "bg-accent text-white border-accent" : "border-input text-muted-foreground"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

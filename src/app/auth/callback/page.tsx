@@ -38,17 +38,16 @@ function CallbackInner() {
         body: JSON.stringify({ email: data.session.user.email }),
       });
 
+      const from = searchParams.get("from");
       if (res.ok) {
-        router.push("/admin");
+        // Admin login page → go to admin panel; store sign-in → stay on store
+        router.push(from === "admin" ? "/admin" : "/store");
       } else {
-        // Not admin — check if they came from the admin login page
-        const from = searchParams.get("from");
         if (from === "admin") {
           await supabase.auth.signOut();
           setMessage("Access denied — this Google account is not the admin.");
           setTimeout(() => router.push("/admin/login?error=not_admin"), 2500);
         } else {
-          // Regular store user — session is stored, redirect to store
           router.push("/store");
         }
       }

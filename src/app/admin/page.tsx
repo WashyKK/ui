@@ -4,7 +4,9 @@ import AdminTabs from "./admin-tabs";
 
 export default function AdminPage() {
   const isAdmin = cookies().get("admin")?.value === "1";
-  if (!isAdmin) {
+  const isManager = cookies().get("manager")?.value === "1";
+
+  if (!isAdmin && !isManager) {
     return (
       <div className="container mx-auto p-6">
         <h1 className="text-2xl font-semibold">Admin</h1>
@@ -15,5 +17,5 @@ export default function AdminPage() {
       </div>
     );
   }
-  return <AdminTabs />;
+  return <AdminTabs isAdmin={isAdmin} />;
 }

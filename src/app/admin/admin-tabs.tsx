@@ -3,22 +3,26 @@
 import { useState } from "react";
 import AdminForm from "./product-form";
 import CategoriesForm from "./categories-form";
+import UsersPanel from "./users-panel";
 
-const TABS = [
-  { id: "products", label: "Products" },
-  { id: "categories", label: "Categories" },
-] as const;
+interface Props {
+  isAdmin: boolean;
+}
 
-type Tab = typeof TABS[number]["id"];
+export default function AdminTabs({ isAdmin }: Props) {
+  const [active, setActive] = useState("products");
 
-export default function AdminTabs() {
-  const [active, setActive] = useState<Tab>("products");
+  const tabs = [
+    { id: "products", label: "Products" },
+    ...(isAdmin ? [{ id: "categories", label: "Categories" }] : []),
+    ...(isAdmin ? [{ id: "users", label: "Users" }] : []),
+  ];
 
   return (
     <div className="container mx-auto p-6">
       {/* Tab bar */}
       <div className="flex gap-1 mb-8 border-b">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActive(tab.id)}
@@ -34,7 +38,8 @@ export default function AdminTabs() {
       </div>
 
       {active === "products" && <AdminForm />}
-      {active === "categories" && <CategoriesForm />}
+      {active === "categories" && isAdmin && <CategoriesForm />}
+      {active === "users" && isAdmin && <UsersPanel />}
     </div>
   );
 }

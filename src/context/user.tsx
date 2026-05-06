@@ -7,6 +7,8 @@ import type { User } from "@supabase/supabase-js";
 interface UserContextValue {
   user: User | null;
   loading: boolean;
+  isAdmin: boolean;
+  isManager: boolean;
   signIn: () => void;
   signOut: () => Promise<void>;
 }
@@ -14,6 +16,8 @@ interface UserContextValue {
 const UserContext = createContext<UserContextValue>({
   user: null,
   loading: true,
+  isAdmin: false,
+  isManager: false,
   signIn: () => {},
   signOut: async () => {},
 });
@@ -21,15 +25,28 @@ const UserContext = createContext<UserContextValue>({
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isManager, setIsManager] = useState(false);
+
+  const checkRole = async () => {
+    try {
+      const res = await fetch("/api/admin/check");
+      const d = await res.json();
+      setIsAdmin(!!d.isAdmin);
+      setIsManager(!!d.isManager);
+    } catch {}
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null);
       setLoading(false);
     });
+    checkRole();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
+      checkRole();
     });
 
     return () => subscription.unsubscribe();
@@ -45,10 +62,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setIsAdmin(false);
+    setIsManager(false);
   };
 
   return (
-    <UserContext.Provider value={{ user, loading, signIn, signOut }}>
+    <UserContext.Provider value={{ user, loading, isAdmin, isManager, signIn, signOut }}>
       {children}
     </UserContext.Provider>
   );
