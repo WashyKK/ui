@@ -1,7 +1,53 @@
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
+import Stripe from "stripe";
+import { supabaseServer } from "@/lib/supabaseServer";
 
-export default function SuccessPage() {
+async function recordOrder(sessionId: string) {
+  const secret = process.env.STRIPE_SECRET_KEY;
+  if (!secret) return;
+
+  const stripe = new Stripe(secret, { apiVersion: "2024-06-20" });
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId);
+  } catch {
+    return;
+  }
+
+  if (session.payment_status !== "paid") return;
+
+  const meta = session.metadata ?? {};
+  const email = meta.customer_email || session.customer_details?.email || null;
+  const shippingZone = meta.shipping_zone || null;
+  const shippingAmount = Number(meta.shipping_amount || 0) || null;
+
+  let cartItems: { productId: string; quantity: number }[] = [];
+  try { cartItems = meta.items ? JSON.parse(meta.items) : []; } catch {}
+  if (!cartItems.length && meta.productId) {
+    cartItems = [{ productId: meta.productId, quantity: parseInt(meta.quantity || "1", 10) }];
+  }
+
+  await supabaseServer.from("orders").upsert({
+    stripe_session_id: session.id,
+    product_id: cartItems.length === 1 ? cartItems[0].productId : null,
+    quantity: cartItems.reduce((s, i) => s + i.quantity, 0),
+    amount_total: session.amount_total ?? 0,
+    customer_email: email,
+    shipping_zone: shippingZone,
+    shipping_amount: shippingAmount,
+    cart_items: cartItems.length > 0 ? cartItems : null,
+  }, { onConflict: "stripe_session_id" });
+}
+
+export default async function SuccessPage({
+  searchParams,
+}: {
+  searchParams: { session_id?: string };
+}) {
+  const sessionId = searchParams.session_id;
+  if (sessionId) await recordOrder(sessionId);
+
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
       <div className="w-full max-w-md rounded-2xl border bg-white dark:bg-zinc-900 shadow-sm p-10 text-center space-y-5">
@@ -25,12 +71,12 @@ export default function SuccessPage() {
           >
             Continue Shopping
           </Link>
-          <a
-            href="mailto:washingtonkigan@gmail.com?subject=Order%20Follow-up%20%E2%80%94%20Elffie%20Robotics"
+          <Link
+            href="/account/orders"
             className="px-5 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition"
           >
-            Contact Support
-          </a>
+            View Order History
+          </Link>
         </div>
         <p className="text-xs text-muted-foreground">
           Questions? Email{" "}

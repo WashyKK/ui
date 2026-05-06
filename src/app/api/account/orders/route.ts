@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   const [stripeRes, mpesaRes] = await Promise.all([
     supabaseServer
       .from("orders")
-      .select("id, stripe_session_id, amount_total, customer_email, shipping_zone, cart_items, product_id, quantity, created_at")
+      .select("id, stripe_session_id, amount_total, customer_email, shipping_zone, shipping_amount, cart_items, product_id, quantity, created_at")
       .ilike("customer_email", email)
       .order("created_at", { ascending: false })
       .limit(50),
