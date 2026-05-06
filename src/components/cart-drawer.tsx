@@ -1,32 +1,49 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   Minus, Plus, X, ShoppingCart, CreditCard,
-  Loader2, CheckCircle2, AlertCircle, Lock, Smartphone,
+  Loader2, CheckCircle2, AlertCircle, Lock, Smartphone, MapPin, Mail,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/cart";
+import { useUser } from "@/context/user";
+import { SHIPPING_ZONES, getShippingRate, getShippingLabel } from "@/lib/shipping";
 
 type MpesaState =
   | { step: "idle" }
-  | { step: "form" }
   | { step: "loading" }
   | { step: "sent"; checkoutRequestId: string; amountKES: number }
   | { step: "polling"; checkoutRequestId: string }
   | { step: "success"; receipt?: string }
   | { step: "error"; message: string };
 
+const USD_TO_KES = Number(process.env.NEXT_PUBLIC_MPESA_USD_TO_KES_RATE ?? 130);
+
 export default function CartDrawer() {
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice, isOpen, closeCart } = useCart();
-  const [stripeLoading, setStripeLoading] = useState(false);
+  const { user } = useUser();
+
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [shippingZone, setShippingZone] = useState("");
+  const [stripeLoading, setStripeLoading] = useState(false);
   const [mpesa, setMpesa] = useState<MpesaState>({ step: "idle" });
 
+  // Pre-fill email from signed-in user
+  useEffect(() => {
+    if (user?.email && !email) setEmail(user.email);
+  }, [user, email]);
+
+  const shippingRate = shippingZone ? getShippingRate(shippingZone) : 0;
+  const orderTotal = totalPrice + shippingRate;
+  const canCheckout = email.trim() && shippingZone;
+
   const handleStripeCheckout = async () => {
+    if (!canCheckout) return;
     setStripeLoading(true);
     try {
       const res = await fetch("/api/checkout", {
@@ -34,6 +51,10 @@ export default function CartDrawer() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+          email: email.trim(),
+          phone: phone.trim() || undefined,
+          shippingZone,
+          shippingAmount: shippingRate,
         }),
       });
       const data = await res.json();
@@ -44,6 +65,7 @@ export default function CartDrawer() {
   };
 
   const handleMpesaPush = async () => {
+    if (!canCheckout) return;
     setMpesa({ step: "loading" });
     try {
       const res = await fetch("/api/mpesa/stk-push", {
@@ -52,6 +74,9 @@ export default function CartDrawer() {
         body: JSON.stringify({
           phone,
           items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+          email: email.trim(),
+          shippingZone,
+          shippingAmount: shippingRate,
         }),
       });
       const data = await res.json();
@@ -83,7 +108,7 @@ export default function CartDrawer() {
     setMpesa({ step: "error", message: "Payment timed out. Check your M-Pesa messages." });
   };
 
-  const resetMpesa = () => { setMpesa({ step: "idle" }); setPhone(""); };
+  const resetMpesa = () => setMpesa({ step: "idle" });
 
   if (items.length === 0 && mpesa.step !== "success") {
     return (
@@ -132,6 +157,9 @@ export default function CartDrawer() {
               {mpesa.receipt && (
                 <p className="text-sm text-muted-foreground mt-1">Receipt: {mpesa.receipt}</p>
               )}
+              <p className="text-sm text-muted-foreground mt-2">
+                A confirmation has been sent to {email || "your email address"}.
+              </p>
             </div>
             <Button onClick={() => { resetMpesa(); closeCart(); }} asChild>
               <Link href="/store">Continue Shopping</Link>
@@ -147,21 +175,16 @@ export default function CartDrawer() {
                     {product.imageUrl ? (
                       <Image src={product.imageUrl} alt={product.name} fill className="object-cover" sizes="64px" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                        No img
-                      </div>
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No img</div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm leading-snug truncate">{product.name}</p>
-                    {product.category && (
-                      <p className="text-xs text-muted-foreground">{product.category}</p>
-                    )}
+                    {product.category && <p className="text-xs text-muted-foreground">{product.category}</p>}
                     <div className="flex items-center gap-2 mt-2">
                       <button
                         onClick={() => updateQuantity(product.id, quantity - 1)}
                         className="h-6 w-6 rounded border flex items-center justify-center hover:bg-muted transition-colors"
-                        aria-label="Decrease quantity"
                       >
                         <Minus className="h-3 w-3" />
                       </button>
@@ -170,20 +193,16 @@ export default function CartDrawer() {
                         onClick={() => updateQuantity(product.id, Math.min(quantity + 1, product.stock))}
                         disabled={quantity >= product.stock}
                         className="h-6 w-6 rounded border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40"
-                        aria-label="Increase quantity"
                       >
                         <Plus className="h-3 w-3" />
                       </button>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold tabular-nums">
-                      ${(product.price * quantity).toFixed(2)}
-                    </p>
+                    <p className="text-sm font-semibold tabular-nums">${(product.price * quantity).toFixed(2)}</p>
                     <button
                       onClick={() => removeFromCart(product.id)}
                       className="mt-1 text-muted-foreground hover:text-destructive transition-colors"
-                      aria-label="Remove"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -194,23 +213,79 @@ export default function CartDrawer() {
 
             {/* Footer */}
             <div className="border-t px-5 py-4 space-y-4 bg-gray-50/50 dark:bg-zinc-900/50">
-              {/* Subtotal */}
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Subtotal</span>
-                <span className="text-xl font-bold tabular-nums">${totalPrice.toFixed(2)}</span>
+
+              {/* Contact & Shipping */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contact & Shipping</p>
+
+                {/* Email */}
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+
+                {/* Shipping zone */}
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-2.5" />
+                  <div className="flex-1 space-y-1">
+                    <select
+                      value={shippingZone}
+                      onChange={(e) => setShippingZone(e.target.value)}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">— Select shipping destination —</option>
+                      {SHIPPING_ZONES.map((z) => (
+                        <option key={z.id} value={z.id}>
+                          {z.label} — ${z.rate}
+                        </option>
+                      ))}
+                    </select>
+                    {shippingZone && (
+                      <p className="text-[11px] text-muted-foreground pl-1">
+                        Estimate only — final shipping confirmed before dispatch.
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
+
+              {/* Totals */}
+              <div className="space-y-1.5 py-2 border-t border-b">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span className="tabular-nums">${totalPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Shipping {shippingZone ? `— ${getShippingLabel(shippingZone)}` : ""}</span>
+                  <span className="tabular-nums">
+                    {shippingZone ? `$${shippingRate.toFixed(2)}` : "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between font-semibold text-base pt-1">
+                  <span>Total</span>
+                  <span className="tabular-nums">${orderTotal.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {!canCheckout && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Add your email and shipping destination to continue.
+                </p>
+              )}
 
               {/* Stripe */}
               <Button
                 className="w-full gap-2"
                 onClick={handleStripeCheckout}
-                disabled={stripeLoading}
+                disabled={stripeLoading || !canCheckout}
               >
-                {stripeLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CreditCard className="h-4 w-4" />
-                )}
+                {stripeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                 {stripeLoading ? "Redirecting…" : "Checkout with Card"}
               </Button>
 
@@ -223,21 +298,9 @@ export default function CartDrawer() {
 
               {/* M-Pesa */}
               {mpesa.step === "idle" && (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 border-green-600 text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
-                  onClick={() => setMpesa({ step: "form" })}
-                >
-                  <Smartphone className="h-4 w-4" />
-                  Pay with M-Pesa
-                </Button>
-              )}
-
-              {mpesa.step === "form" && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">M-Pesa Phone Number</label>
-                  <div className="flex gap-2">
-                    <div className="flex items-center px-3 rounded-md border bg-muted text-sm text-muted-foreground shrink-0">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center px-3 rounded-md border bg-muted text-sm text-muted-foreground shrink-0 h-9">
                       +254
                     </div>
                     <input
@@ -245,22 +308,18 @@ export default function CartDrawer() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="712 345 678"
-                      className="flex-1 h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-2"
-                      onClick={handleMpesaPush}
-                      disabled={!phone.trim()}
-                    >
-                      <Smartphone className="h-4 w-4" />
-                      Send STK Push — KES {Math.ceil(totalPrice * Number(process.env.NEXT_PUBLIC_MPESA_USD_TO_KES_RATE ?? 130)).toLocaleString()}
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={resetMpesa}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 border-green-600 text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
+                    onClick={handleMpesaPush}
+                    disabled={!phone.trim() || !canCheckout}
+                  >
+                    <Smartphone className="h-4 w-4" />
+                    Pay with M-Pesa — KES {Math.ceil(orderTotal * USD_TO_KES).toLocaleString()}
+                  </Button>
                 </div>
               )}
 
@@ -276,11 +335,9 @@ export default function CartDrawer() {
                   <div className="flex gap-2">
                     <Smartphone className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                        STK Push sent!
-                      </p>
+                      <p className="text-sm font-medium text-green-800 dark:text-green-300">STK Push sent!</p>
                       <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
-                        Check your phone for the M-Pesa prompt and enter your PIN to pay KES {mpesa.amountKES.toLocaleString()}.
+                        Enter your M-Pesa PIN to pay KES {mpesa.amountKES.toLocaleString()}.
                       </p>
                     </div>
                   </div>
@@ -290,11 +347,9 @@ export default function CartDrawer() {
                       className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                       onClick={() => pollStatus(mpesa.checkoutRequestId)}
                     >
-                      Confirm Payment
+                      I&apos;ve paid — confirm
                     </Button>
-                    <Button size="sm" variant="outline" onClick={resetMpesa}>
-                      Cancel
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={resetMpesa}>Cancel</Button>
                   </div>
                 </div>
               )}
@@ -311,9 +366,7 @@ export default function CartDrawer() {
                   <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-red-700 dark:text-red-400">{mpesa.message}</p>
-                    <button onClick={resetMpesa} className="text-xs underline text-red-600 mt-1">
-                      Try again
-                    </button>
+                    <button onClick={resetMpesa} className="text-xs underline text-red-600 mt-1">Try again</button>
                   </div>
                 </div>
               )}

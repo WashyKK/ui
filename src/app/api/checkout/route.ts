@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { getShippingRate, getShippingLabel } from "@/lib/shipping";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -9,8 +10,6 @@ export async function POST(req: Request) {
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
 
-  // Accept cart items array { items: [{productId, quantity}] }
-  // or legacy single product { productId, quantity }
   const rawItems: { productId: string; quantity: number }[] = Array.isArray(body.items)
     ? body.items
     : body.productId
@@ -24,7 +23,6 @@ export async function POST(req: Request) {
   const stripe = new Stripe(secret, { apiVersion: "2024-06-20" });
   const origin = new URL(req.url).origin;
 
-  // Resolve products from DB (never trust client prices)
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
   const metaItems: { productId: string; quantity: number }[] = [];
 
@@ -37,10 +35,7 @@ export async function POST(req: Request) {
       .single();
 
     if (error || !product) {
-      return NextResponse.json(
-        { error: `Product not found: ${item.productId}` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `Product not found: ${item.productId}` }, { status: 404 });
     }
 
     lineItems.push({
@@ -59,12 +54,31 @@ export async function POST(req: Request) {
     metaItems.push({ productId: product.id, quantity: qty });
   }
 
+  // Add shipping line item
+  const shippingZone: string = body.shippingZone || "";
+  const shippingAmount = shippingZone ? getShippingRate(shippingZone) : (Number(body.shippingAmount) || 0);
+  if (shippingAmount > 0) {
+    lineItems.push({
+      price_data: {
+        currency: "usd",
+        unit_amount: Math.round(shippingAmount * 100),
+        product_data: { name: `Shipping — ${getShippingLabel(shippingZone)}` },
+      },
+      quantity: 1,
+    });
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
     line_items: lineItems,
+    customer_email: body.email || undefined,
     metadata: {
       items: JSON.stringify(metaItems),
+      customer_email: body.email || "",
+      customer_phone: body.phone || "",
+      shipping_zone: shippingZone,
+      shipping_amount: String(shippingAmount),
     },
     success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/checkout/cancel`,

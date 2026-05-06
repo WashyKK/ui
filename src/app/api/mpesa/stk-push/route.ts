@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { stkPush, normalizePhone, isValidKenyanPhone } from "@/lib/mpesa";
+import { getShippingRate } from "@/lib/shipping";
 
 const USD_TO_KES = Number(process.env.MPESA_USD_TO_KES_RATE ?? "130");
 
@@ -18,7 +19,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Accept { items: [{productId, quantity}] } or legacy { productId, quantity }
   const rawItems: { productId: string; quantity: number }[] =
     Array.isArray(body.items)
       ? body.items
@@ -30,7 +30,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No items provided" }, { status: 400 });
   }
 
-  // Validate and price all items server-side
   let totalUSD = 0;
   const resolvedItems: { id: string; name: string; price: number; quantity: number }[] = [];
 
@@ -42,26 +41,20 @@ export async function POST(req: Request) {
       .single();
 
     if (error || !p) {
-      return NextResponse.json(
-        { error: `Product not found: ${item.productId}` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `Product not found: ${item.productId}` }, { status: 404 });
     }
     if (Number(p.stock) < item.quantity) {
-      return NextResponse.json(
-        { error: `Insufficient stock for "${p.name}"` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `Insufficient stock for "${p.name}"` }, { status: 400 });
     }
 
     totalUSD += Number(p.price) * item.quantity;
-    resolvedItems.push({
-      id: p.id,
-      name: p.name,
-      price: Number(p.price),
-      quantity: item.quantity,
-    });
+    resolvedItems.push({ id: p.id, name: p.name, price: Number(p.price), quantity: item.quantity });
   }
+
+  // Add shipping
+  const shippingZone: string = body.shippingZone || "";
+  const shippingUSD = shippingZone ? getShippingRate(shippingZone) : (Number(body.shippingAmount) || 0);
+  totalUSD += shippingUSD;
 
   const amountKES = Math.ceil(totalUSD * USD_TO_KES);
   if (amountKES < 1) {
@@ -69,10 +62,7 @@ export async function POST(req: Request) {
   }
 
   const origin = new URL(req.url).origin;
-  const description =
-    resolvedItems.length === 1
-      ? resolvedItems[0].name.slice(0, 13)
-      : "Elffie Order";
+  const description = resolvedItems.length === 1 ? resolvedItems[0].name.slice(0, 13) : "Elffie Order";
 
   let result;
   try {
@@ -87,7 +77,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err.message }, { status: 502 });
   }
 
-  // Record pending order
   await supabaseServer.from("mpesa_orders").insert({
     checkout_request_id: result.CheckoutRequestID,
     merchant_request_id: result.MerchantRequestID,
@@ -95,6 +84,9 @@ export async function POST(req: Request) {
     quantity: resolvedItems.reduce((s, i) => s + i.quantity, 0),
     amount: amountKES,
     phone,
+    email: body.email || null,
+    shipping_zone: shippingZone || null,
+    shipping_amount: shippingUSD || null,
     cart_items: resolvedItems.length > 1 ? resolvedItems : null,
     status: "pending",
   });

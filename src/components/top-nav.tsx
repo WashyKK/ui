@@ -4,16 +4,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, ShoppingCart } from "lucide-react";
+import { Menu, ShoppingCart, LogIn, LogOut, User } from "lucide-react";
 import { useCart } from "@/context/cart";
+import { useUser } from "@/context/user";
 
 export default function TopNav() {
   const [open, setOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const { totalItems, openCart } = useCart();
+  const { user, loading, signIn, signOut } = useUser();
 
   const linkClass = (href: string) =>
     `${pathname.startsWith(href) ? "text-foreground underline underline-offset-4" : "text-muted-foreground hover:text-foreground"}`;
+
+  const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Account";
+  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:bg-zinc-900/60">
@@ -33,8 +39,9 @@ export default function TopNav() {
           <a href="mailto:washingtonkigan@gmail.com?subject=Inquiry%20%E2%80%94%20Elffie%20Robotics" className="text-accent">Contact</a>
         </nav>
 
-        {/* Cart + mobile actions */}
+        {/* Right side actions */}
         <div className="flex items-center gap-2">
+          {/* Cart */}
           <button
             onClick={openCart}
             className="relative p-2 rounded-md hover:bg-muted transition-colors"
@@ -48,13 +55,74 @@ export default function TopNav() {
             )}
           </button>
 
+          {/* User account — desktop */}
+          {!loading && (
+            <div className="hidden md:block relative">
+              {user ? (
+                <>
+                  <button
+                    onClick={() => setUserMenuOpen((v) => !v)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-muted transition-colors text-sm"
+                  >
+                    {avatarUrl ? (
+                      <Image src={avatarUrl} alt={displayName} width={24} height={24} className="rounded-full" />
+                    ) : (
+                      <span className="h-6 w-6 rounded-full bg-accent/20 flex items-center justify-center text-accent text-xs font-semibold">
+                        {displayName[0].toUpperCase()}
+                      </span>
+                    )}
+                    <span className="max-w-[120px] truncate text-sm font-medium">{displayName}</span>
+                  </button>
+                  {userMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                      <div className="absolute right-0 top-10 z-50 w-48 rounded-xl border bg-white dark:bg-zinc-900 shadow-lg py-1 text-sm">
+                        <div className="px-3 py-2 text-xs text-muted-foreground truncate border-b mb-1">{user.email}</div>
+                        <button
+                          onClick={() => { signOut(); setUserMenuOpen(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted transition-colors text-left"
+                        >
+                          <LogOut className="h-3.5 w-3.5" />
+                          Sign out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={signIn}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm hover:bg-muted transition-colors"
+                >
+                  <LogIn className="h-3.5 w-3.5" />
+                  Sign in
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Mobile buttons */}
           <div className="flex items-center gap-2 md:hidden">
-            <a
-              href="mailto:washingtonkigan@gmail.com?subject=Inquiry%20%E2%80%94%20Elffie%20Robotics"
-              className="text-xs px-3 py-1.5 rounded-md bg-accent text-white"
-            >
-              Contact
-            </a>
+            {!loading && user ? (
+              <button
+                onClick={() => setUserMenuOpen((v) => !v)}
+                className="p-1.5 rounded-full border"
+              >
+                {avatarUrl ? (
+                  <Image src={avatarUrl} alt={displayName} width={22} height={22} className="rounded-full" />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
+              </button>
+            ) : !loading ? (
+              <button
+                onClick={signIn}
+                className="p-1.5 rounded-md border"
+                aria-label="Sign in"
+              >
+                <LogIn className="h-4 w-4" />
+              </button>
+            ) : null}
             <button
               aria-label="Open menu"
               className="p-2 rounded-md border"
@@ -66,7 +134,24 @@ export default function TopNav() {
         </div>
       </div>
 
-      {/* Mobile menu panel */}
+      {/* Mobile user menu */}
+      {userMenuOpen && user && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={() => setUserMenuOpen(false)} />
+          <div className="fixed top-14 right-4 z-50 w-56 rounded-xl border bg-white dark:bg-zinc-900 shadow-lg py-1 text-sm md:hidden">
+            <div className="px-3 py-2 text-xs text-muted-foreground truncate border-b mb-1">{user.email}</div>
+            <button
+              onClick={() => { signOut(); setUserMenuOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted transition-colors text-left"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sign out
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Mobile nav panel */}
       {open && (
         <>
           <div className="fixed inset-0 z-40 bg-black/40 animate-[fadeIn_180ms_ease-out] md:hidden" onClick={() => setOpen(false)} />
