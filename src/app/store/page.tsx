@@ -119,11 +119,6 @@ export default function Store() {
                 Global shipping
               </span>
             </div>
-            <Link href="/admin/login">
-              <Button variant="outline" size="sm" className="text-xs h-8">
-                Admin
-              </Button>
-            </Link>
           </div>
         </div>
       </section>

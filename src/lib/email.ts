@@ -87,7 +87,7 @@ export async function sendOrderConfirmation(params: SendOrderConfirmationParams)
 
       <p style="margin:24px 0 0;font-size:13px;color:#9ca3af">
         We'll reach out via email to coordinate delivery details. For questions contact
-        <a href="mailto:washingtonkigan@gmail.com" style="color:#6366f1">washingtonkigan@gmail.com</a>.
+        <a href="mailto:admin@elffie.com" style="color:#6366f1">admin@elffie.com</a>.
       </p>
     </div>
     <div style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center">
