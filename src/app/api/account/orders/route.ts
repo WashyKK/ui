@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { getVerifiedUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const email = searchParams.get("email")?.toLowerCase().trim();
-  if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
+  // Callers get their own orders and nobody else's. Taking the address from the
+  // query string let anyone read any customer's history by guessing an email.
+  const user = await getVerifiedUser(req);
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  const email = user.email;
 
   const [stripeRes, mpesaRes] = await Promise.all([
     supabaseServer

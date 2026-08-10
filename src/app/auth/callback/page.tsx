@@ -34,8 +34,7 @@ function CallbackInner() {
 
       const res = await fetch("/api/admin/google-login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: data.session.user.email }),
+        headers: { Authorization: `Bearer ${data.session.access_token}` },
       });
 
       const loginData = await res.json().catch(() => ({}));

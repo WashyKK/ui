@@ -105,7 +105,9 @@ export default function OrderHistoryPage() {
       setSignedIn(!!userEmail);
 
       if (userEmail) {
-        const res = await fetch(`/api/account/orders?email=${encodeURIComponent(userEmail)}`);
+        const res = await fetch("/api/account/orders", {
+          headers: { Authorization: `Bearer ${data.session!.access_token}` },
+        });
         const d = await res.json();
         setOrders(d.orders ?? []);
       }
