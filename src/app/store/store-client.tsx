@@ -8,6 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Product, toProduct } from "@/components/types";
 import Products from "@/components/products";
+import SpecFilters from "@/components/spec-filters";
+import type { Facet } from "@/lib/attributes";
+
+interface StoreProps {
+  initialProducts: Product[];
+  facets: Facet[];
+  /** productId -> { attributeKey -> values }, for filtering without a round trip. */
+  attributeIndex: Record<string, Record<string, string[]>>;
+}
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
@@ -16,7 +25,7 @@ const SORT_OPTIONS = [
   { value: "name", label: "Name A–Z" },
 ];
 
-function StoreInner({ initialProducts }: { initialProducts: Product[] }) {
+function StoreInner({ initialProducts, facets, attributeIndex }: StoreProps) {
   const searchParams = useSearchParams();
   const [products, setProducts] = React.useState<Product[]>(initialProducts);
   const [loading, setLoading] = React.useState(false);
@@ -71,6 +80,17 @@ function StoreInner({ initialProducts }: { initialProducts: Product[] }) {
         );
       });
     }
+    // Spec facets, ANDed across keys and ORed within one — picking 12 V and
+    // 24 V means "either voltage", picking 24 V and IP67 means "both".
+    for (const facet of facets) {
+      const wanted = searchParams.getAll(facet.key);
+      if (wanted.length === 0) continue;
+      list = list.filter((p) => {
+        const values = attributeIndex[p.id]?.[facet.key] ?? [];
+        return wanted.some((w) => values.includes(w));
+      });
+    }
+
     switch (sort) {
       case "price-asc":
         list.sort((a, b) => a.price - b.price);
@@ -88,7 +108,7 @@ function StoreInner({ initialProducts }: { initialProducts: Product[] }) {
         );
     }
     return list;
-  }, [products, activeCategory, search, sort]);
+  }, [products, activeCategory, search, sort, facets, attributeIndex, searchParams]);
 
   return (
     <div className="space-y-6">
@@ -200,7 +220,14 @@ function StoreInner({ initialProducts }: { initialProducts: Product[] }) {
       )}
 
       {/* Products */}
-      <Products products={filtered} loading={loading} error={error} view={view} onRetry={load} />
+      {facets.length > 0 ? (
+        <div className="grid lg:grid-cols-[220px_minmax(0,1fr)] gap-8 items-start">
+          <SpecFilters facets={facets} />
+          <Products products={filtered} loading={loading} error={error} view={view} onRetry={load} />
+        </div>
+      ) : (
+        <Products products={filtered} loading={loading} error={error} view={view} onRetry={load} />
+      )}
 
       {/* Quote CTA */}
       {!loading && !error && (
@@ -235,10 +262,10 @@ function StoreInner({ initialProducts }: { initialProducts: Product[] }) {
  * useSearchParams opts the page into client-side rendering, so it must sit
  * inside a Suspense boundary or the whole route de-opts at build time.
  */
-export default function StoreClient({ initialProducts }: { initialProducts: Product[] }) {
+export default function StoreClient(props: StoreProps) {
   return (
     <React.Suspense fallback={<div className="py-24" />}>
-      <StoreInner initialProducts={initialProducts} />
+      <StoreInner {...props} />
     </React.Suspense>
   );
 }

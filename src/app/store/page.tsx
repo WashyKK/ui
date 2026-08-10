@@ -4,6 +4,7 @@ import { toProduct, type Product } from "@/components/types";
 import { productPath } from "@/lib/slug";
 import { SITE_DESCRIPTION } from "@/lib/site";
 import { listProducts } from "@/lib/products-query";
+import { attributeIndex, facets as loadFacets } from "@/lib/attributes";
 import StoreClient from "./store-client";
 
 export const metadata: Metadata = {
@@ -21,11 +22,19 @@ async function getProducts(): Promise<{ products: Product[]; rows: any[] }> {
 }
 
 export default async function StorePage() {
-  const { products, rows } = await getProducts();
+  const [{ products, rows }, facets, attributes] = await Promise.all([
+    getProducts(),
+    loadFacets(),
+    attributeIndex(),
+  ]);
 
   return (
     <>
-      <StoreClient initialProducts={products} />
+      <StoreClient
+        initialProducts={products}
+        facets={facets}
+        attributeIndex={attributes}
+      />
 
       {/*
         The catalogue arrives in the HTML now, but the filtering UI is a client

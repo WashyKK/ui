@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { canManageProducts } from "@/lib/auth-check";
+import { notifyBackInStock } from "@/lib/stock-alerts";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   if (!canManageProducts()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,6 +24,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (typeof body.imageUrl === "string") update.image_url = body.imageUrl;
   if (typeof body.datasheetUrl === "string") update.datasheet_url = body.datasheetUrl;
 
+  // Read the old stock first: going from zero to positive is what everyone
+  // waiting on this part asked to be told about.
+  const { data: before } = await supabaseServer
+    .from("products")
+    .select("stock")
+    .eq("id", params.id)
+    .maybeSingle();
+
   const { data, error } = await supabaseServer
     .from("products")
     .update(update)
@@ -31,7 +40,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ product: data });
+
+  let notified = 0;
+  const wasOutOfStock = Number(before?.stock ?? 0) <= 0;
+  if (wasOutOfStock && Number(data.stock) > 0) {
+    // Never let a notification failure fail the edit — the stock change is the
+    // thing that had to succeed.
+    notified = await notifyBackInStock(params.id).catch((err) => {
+      console.error("back-in-stock notification failed:", err?.message);
+      return 0;
+    });
+  }
+
+  return NextResponse.json({ product: data, notified });
 }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {

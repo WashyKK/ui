@@ -14,6 +14,8 @@ import { findProductBy } from "@/lib/products-query";
 import { absoluteUrl } from "@/lib/site";
 import { getUsdToKesRate, usdToKes } from "@/lib/fx";
 import { JsonLd, breadcrumbSchema, productSchema } from "@/lib/json-ld";
+import { attributesFor } from "@/lib/attributes";
+import StockAlertForm from "@/components/stock-alert-form";
 
 /** Resolve by slug or by legacy UUID — old links must keep working. */
 async function findProduct(idOrSlug: string) {
@@ -70,15 +72,33 @@ function StockBadge({ stock }: { stock: number }) {
   );
 }
 
-/** Spec rows worth showing. Empty values are dropped rather than shown as "—". */
-function specRows(p: any, stock: number) {
-  return [
+/**
+ * Spec rows worth showing. Catalogue metadata first, then the real attributes —
+ * which is the only place those values are readable outside the PDF datasheet,
+ * where neither Google nor this site's own search can reach them.
+ */
+function specRows(
+  p: any,
+  stock: number,
+  attributes: { label: string; value: string; unit: string | null }[]
+) {
+  const base: [string, string][] = [
     ["Part number", p.mpn],
     ["Manufacturer", p.manufacturer],
     ["Stock code", p.sku],
     ["Category", p.category],
-    ["Availability", stock > 0 ? `${stock} in stock` : "On request"],
   ].filter(([, value]) => Boolean(value)) as [string, string][];
+
+  const specs: [string, string][] = attributes.map((a) => [
+    a.label,
+    a.unit ? `${a.value} ${a.unit}` : a.value,
+  ]);
+
+  return [
+    ...base,
+    ...specs,
+    ["Availability", stock > 0 ? `${stock} in stock` : "On request"] as [string, string],
+  ];
 }
 
 async function getRelated(productId: string): Promise<RelatedProduct[]> {
@@ -114,7 +134,8 @@ export default async function ProductPage({ params }: { params: { id: string } }
 
   const product = toProduct(p);
   const images = galleryFor(product);
-  const specs = specRows(p, product.stock);
+  const attributes = await attributesFor(product.id);
+  const specs = specRows(p, product.stock, attributes);
 
   // Relations live in a table that may not exist yet on an un-migrated database.
   const related = await getRelated(product.id).catch(() => [] as RelatedProduct[]);
@@ -168,7 +189,11 @@ export default async function ProductPage({ params }: { params: { id: string } }
             </div>
           </div>
 
-          <ProductActions product={product} />
+          {product.stock > 0 ? (
+            <ProductActions product={product} />
+          ) : (
+            <StockAlertForm productId={product.id} />
+          )}
 
           {product.datasheetUrl && (
             <div className="rounded-sm border p-4 flex items-center gap-4">

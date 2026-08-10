@@ -27,6 +27,57 @@ const PAYMENT_LABELS: Record<SendOrderConfirmationParams["paymentMethod"], strin
   mpesa: "M-Pesa",
 };
 
+interface SendBackInStockParams {
+  to: string;
+  productName: string;
+  productUrl: string;
+  stock: number;
+}
+
+export async function sendBackInStock({
+  to, productName, productUrl, stock,
+}: SendBackInStockParams) {
+  if (!resend) {
+    console.warn(`RESEND_API_KEY unset — no back-in-stock email for ${productName}`);
+    return;
+  }
+
+  // Deliberately blunt about scarcity, because it is true: these are often the
+  // only units in the country, and the person waiting asked to be told.
+  const scarcity =
+    stock <= 3
+      ? `Only ${stock} ${stock === 1 ? "unit" : "units"} came in, so it may not last.`
+      : `${stock} units are available.`;
+
+  await resend.emails.send({
+    from: "Elffie Robotics <orders@elffie.com>",
+    to,
+    subject: `Back in stock — ${productName}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f2f3f5;font-family:Inter,system-ui,sans-serif">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border:1px solid #e3e5e8">
+    <div style="background:#1a1c1f;padding:24px 28px">
+      <h1 style="margin:0;color:#fff;font-size:18px;font-weight:600;letter-spacing:-0.02em">Elffie Robotics</h1>
+      <p style="margin:4px 0 0;color:#8a8f94;font-size:12px">Back in stock</p>
+    </div>
+    <div style="padding:28px">
+      <p style="margin:0 0 6px;color:#1a1c1f;font-size:16px;font-weight:500">${productName}</p>
+      <p style="margin:0 0 20px;color:#8a8f94;font-size:14px">${scarcity}</p>
+      <a href="${productUrl}" style="display:inline-block;background:#1a1c1f;color:#fff;padding:11px 20px;font-size:14px;text-decoration:none">View the part</a>
+      <p style="margin:24px 0 0;font-size:12px;color:#8a8f94">
+        You asked to be told when this came back. This is a one-off — we will not
+        email you about it again unless you ask us to.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`,
+  });
+}
+
 export async function sendOrderConfirmation(params: SendOrderConfirmationParams) {
   // Without a key this is a no-op, which is why a broken email pipeline can go
   // unnoticed — the caller sees success either way. Set RESEND_API_KEY.
