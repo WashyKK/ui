@@ -19,8 +19,10 @@ export async function POST(req: Request) {
     ? process.env.ADMIN_EMAIL
     : null;
 
+  // Sign-in looks this row up lower-cased, so a grant to "Foo@Bar.com" would
+  // never be found.
   const { error } = await supabaseServer.from("user_roles").upsert(
-    { email, role, granted_by: adminEmail ?? "admin" },
+    { email: String(email).toLowerCase().trim(), role, granted_by: adminEmail ?? "admin" },
     { onConflict: "email" }
   );
 
@@ -36,7 +38,10 @@ export async function DELETE(req: Request) {
   const { email } = await req.json().catch(() => ({}));
   if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
 
-  const { error } = await supabaseServer.from("user_roles").delete().eq("email", email);
+  const { error } = await supabaseServer
+    .from("user_roles")
+    .delete()
+    .eq("email", String(email).toLowerCase().trim());
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
