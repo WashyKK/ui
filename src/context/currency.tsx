@@ -1,10 +1,17 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { getPublicUsdToKesRate } from "@/lib/fx";
 
 export type Currency = "USD" | "KES" | "EUR";
 
-export const RATES: Record<Currency, number> = { USD: 1, KES: 130, EUR: 0.92 };
+// KES tracks the same rate the server charges at, so the price on the page and
+// the amount debited cannot drift apart.
+export const RATES: Record<Currency, number> = {
+  USD: 1,
+  KES: getPublicUsdToKesRate(),
+  EUR: 0.92,
+};
 export const SYMBOLS: Record<Currency, string> = { USD: "$", KES: "KSh ", EUR: "€" };
 
 interface CurrencyContextValue {
