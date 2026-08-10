@@ -30,12 +30,16 @@ export async function POST(req: Request) {
     const qty = Math.max(1, Number(item.quantity || 1));
     const { data: product, error } = await supabaseServer
       .from("products")
-      .select("id, name, description, price, image_url")
+      .select("id, name, description, price, image_url, stock")
       .eq("id", item.productId)
       .single();
 
     if (error || !product) {
       return NextResponse.json({ error: `Product not found: ${item.productId}` }, { status: 404 });
+    }
+    // The M-Pesa path already checks this; the card path was charging regardless.
+    if (Number(product.stock) < qty) {
+      return NextResponse.json({ error: `Insufficient stock for "${product.name}"` }, { status: 400 });
     }
 
     lineItems.push({
