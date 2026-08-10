@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import type { ColDef, ICellRendererParams } from "ag-grid-community";
+import { Loader2, MailPlus, ShieldCheck, ShieldX, User, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, ShieldX, User, Loader2 } from "lucide-react";
-import ConfirmDialog from "@/components/confirm-dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import Grid from "@/components/admin/grid";
+import InviteSheet from "./invite-sheet";
 
 interface UserRow {
   id: string;
@@ -13,159 +16,281 @@ interface UserRow {
   avatar: string | null;
   provider: string;
   role: string | null;
-  created_at: string;
+  owner: boolean;
+  invited: boolean;
+  created_at: string | null;
   last_sign_in: string | null;
 }
+
+const fmt = (d: string | null) =>
+  d ? new Date(d).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
 export default function UsersPanel() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [working, setWorking] = useState<string | null>(null);
-  const [confirm, setConfirm] = useState<{ user: UserRow; action: "grant" | "revoke" } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editing, setEditing] = useState<{ email: string; role: string | null } | null>(null);
+  const [revoking, setRevoking] = useState<UserRow | null>(null);
+  const [working, setWorking] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/users");
-    const data = await res.json();
-    setUsers(data.users ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/admin/users", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not load users");
+      setUsers(data.users ?? []);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const revoke = async (user: UserRow) => {
+    setWorking(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/roles", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not revoke that");
+      setRevoking(null);
+      load();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setWorking(false);
+    }
   };
 
-  useEffect(() => { load(); }, []);
-
-  const grantManager = async (user: UserRow) => {
-    setWorking(user.id);
-    await fetch("/api/admin/roles", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user.email, role: "store_manager" }),
-    });
-    setWorking(null);
-    setConfirm(null);
-    load();
-  };
-
-  const revokeManager = async (user: UserRow) => {
-    setWorking(user.id);
-    await fetch("/api/admin/roles", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user.email }),
-    });
-    setWorking(null);
-    setConfirm(null);
-    load();
-  };
-
-  const fmt = (dateStr: string | null) => {
-    if (!dateStr) return "—";
-    return new Date(dateStr).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" });
-  };
+  const columns = useMemo<ColDef<UserRow>[]>(() => [
+    {
+      headerName: "User",
+      field: "email",
+      pinned: "left",
+      minWidth: 240,
+      flex: 2,
+      cellRenderer: (p: ICellRendererParams<UserRow>) => {
+        const u = p.data;
+        if (!u) return null;
+        return (
+          <div className="flex items-center gap-2.5 py-1.5">
+            {u.avatar ? (
+              <Image src={u.avatar} alt="" width={26} height={26} className="rounded-full shrink-0" />
+            ) : (
+              <span className="h-[26px] w-[26px] rounded-full bg-muted grid place-items-center shrink-0">
+                <User className="h-3 w-3 text-muted-foreground" />
+              </span>
+            )}
+            <span className="min-w-0 leading-tight">
+              {u.name && <span className="block font-medium truncate">{u.name}</span>}
+              <span className="block text-xs text-muted-foreground truncate">{u.email}</span>
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      headerName: "Access",
+      field: "role",
+      minWidth: 150,
+      valueGetter: (p) =>
+        p.data?.owner ? "Owner"
+          : p.data?.role === "admin" ? "Platform admin"
+          : p.data?.role === "store_manager" ? "Store manager"
+          : "Customer",
+      cellRenderer: (p: ICellRendererParams<UserRow>) => {
+        const u = p.data;
+        if (!u) return null;
+        if (u.owner) {
+          return (
+            <span className="inline-flex items-center gap-1.5 text-xs">
+              <ShieldCheck className="h-3 w-3" /> Owner
+            </span>
+          );
+        }
+        if (u.role === "admin") {
+          return (
+            <span className="inline-flex items-center gap-1.5 text-xs">
+              <ShieldCheck className="h-3 w-3" /> Platform admin
+            </span>
+          );
+        }
+        if (u.role === "store_manager") {
+          return (
+            <span className="inline-flex items-center gap-1.5 text-xs">
+              <Wrench className="h-3 w-3" /> Store manager
+            </span>
+          );
+        }
+        return <span className="text-xs text-muted-foreground">Customer</span>;
+      },
+    },
+    {
+      headerName: "Status",
+      field: "invited",
+      minWidth: 130,
+      valueGetter: (p) => (p.data?.invited ? "Invited" : "Active"),
+      cellRenderer: (p: ICellRendererParams<UserRow>) =>
+        p.data?.invited ? (
+          <span
+            className="text-[10px] uppercase tracking-wide border rounded-sm px-1.5 py-0.5 text-muted-foreground"
+            title="Invited but has not signed in yet — access applies on first sign-in"
+          >
+            Invited
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">Active</span>
+        ),
+    },
+    { headerName: "Provider", field: "provider", minWidth: 110 },
+    {
+      headerName: "Joined",
+      field: "created_at",
+      minWidth: 120,
+      valueFormatter: (p) => fmt(p.value),
+    },
+    {
+      headerName: "Last sign in",
+      field: "last_sign_in",
+      minWidth: 130,
+      valueFormatter: (p) => fmt(p.value),
+    },
+    {
+      headerName: "",
+      colId: "actions",
+      minWidth: 190,
+      flex: 0,
+      width: 190,
+      sortable: false,
+      filter: false,
+      pinned: "right",
+      cellRenderer: (p: ICellRendererParams<UserRow>) => {
+        const u = p.data;
+        if (!u) return null;
+        if (u.owner) {
+          return <span className="text-xs text-muted-foreground">Set by ADMIN_EMAIL</span>;
+        }
+        return (
+          <span className="flex items-center gap-1.5 py-1">
+            <Button
+              size="sm" variant="outline" className="h-7 px-2 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditing({ email: u.email, role: u.role });
+                setSheetOpen(true);
+              }}
+            >
+              {u.role ? "Change" : "Grant access"}
+            </Button>
+            {u.role && (
+              <Button
+                size="sm" variant="outline"
+                className="h-7 px-2 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                onClick={(e) => { e.stopPropagation(); setRevoking(u); }}
+              >
+                <ShieldX className="h-3 w-3" />
+              </Button>
+            )}
+          </span>
+        );
+      },
+    },
+  ], []);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Registered Users</h2>
+          <h2 className="text-lg font-semibold">People</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Appoint store managers who can create and edit products.
+            Platform admins can manage everything including other admins. Store
+            managers can only manage products and orders.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={load}>Refresh</Button>
+        <Button
+          onClick={() => { setEditing(null); setSheetOpen(true); }}
+          className="gap-2 shrink-0"
+        >
+          <MailPlus className="h-4 w-4" /> Invite
+        </Button>
       </div>
 
-      {loading ? (
-        <div className="flex items-center gap-2 py-8 text-muted-foreground text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading users…
-        </div>
-      ) : users.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-8">No users have signed in yet.</p>
-      ) : (
-        <div className="rounded-xl border overflow-hidden">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-zinc-800 text-left">
-              <tr>
-                <th className="px-4 py-3 font-medium">User</th>
-                <th className="px-4 py-3 font-medium">Provider</th>
-                <th className="px-4 py-3 font-medium">Joined</th>
-                <th className="px-4 py-3 font-medium">Last sign in</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-t hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      {u.avatar ? (
-                        <Image src={u.avatar} alt={u.name ?? u.email} width={28} height={28} className="rounded-full shrink-0" />
-                      ) : (
-                        <span className="h-7 w-7 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
-                          <User className="h-3.5 w-3.5 text-accent" />
-                        </span>
-                      )}
-                      <div className="min-w-0">
-                        {u.name && <p className="font-medium truncate">{u.name}</p>}
-                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground capitalize">{u.provider}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{fmt(u.created_at)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{fmt(u.last_sign_in)}</td>
-                  <td className="px-4 py-3">
-                    {u.role === "store_manager" ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-900">
-                        <ShieldCheck className="h-3 w-3" /> Manager
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Customer</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {working === u.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    ) : u.role === "store_manager" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1 h-7 px-2 text-destructive border-destructive/30 hover:bg-destructive/10"
-                        onClick={() => setConfirm({ user: u, action: "revoke" })}
-                      >
-                        <ShieldX className="h-3 w-3" /> Revoke
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1 h-7 px-2"
-                        onClick={() => setConfirm({ user: u, action: "grant" })}
-                      >
-                        <ShieldCheck className="h-3 w-3" /> Make Manager
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {error && (
+        <p className="text-sm text-destructive border border-destructive/30 bg-destructive/10 rounded-sm px-3 py-2">
+          {error}
+        </p>
       )}
 
-      <ConfirmDialog
-        open={!!confirm}
-        title={confirm?.action === "grant" ? "Appoint store manager?" : "Revoke manager role?"}
-        description={
-          confirm?.action === "grant"
-            ? `${confirm.user.email} will be able to create, edit, and delete products.`
-            : `${confirm?.user.email} will lose product management access.`
+      <Grid
+        rowData={users}
+        columnDefs={columns}
+        exportName="elffie-people"
+        loading={loading}
+        height={520}
+        overlayNoRowsTemplate={
+          '<span class="text-sm text-muted-foreground">Nobody has signed in yet.</span>'
         }
-        confirmLabel={confirm?.action === "grant" ? "Appoint" : "Revoke"}
-        variant={confirm?.action === "revoke" ? "destructive" : "default"}
-        onCancel={() => setConfirm(null)}
-        onConfirm={() => confirm?.action === "grant" ? grantManager(confirm.user) : revokeManager(confirm!.user)}
+      />
+
+      <InviteSheet
+        open={sheetOpen}
+        existing={editing}
+        onClose={() => setSheetOpen(false)}
+        onSaved={load}
+      />
+
+      {/* Revoke confirmation, also right-side, so the admin never sees a
+          centred dialog fighting a sheet. */}
+      <InviteRevokeSheet
+        user={revoking}
+        working={working}
+        onCancel={() => setRevoking(null)}
+        onConfirm={() => revoking && revoke(revoking)}
       />
     </div>
+  );
+}
+
+function InviteRevokeSheet({
+  user, working, onCancel, onConfirm,
+}: {
+  user: UserRow | null;
+  working: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Sheet open={!!user} onOpenChange={(o) => !o && onCancel()}>
+      <SheetContent side="right" className="w-full sm:max-w-sm flex flex-col p-0 gap-0">
+        <SheetHeader className="px-6 py-4 border-b">
+          <SheetTitle>Revoke access?</SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 px-6 py-5 space-y-3">
+          <p className="text-sm">
+            <span className="font-medium">{user?.email}</span> will lose access to
+            the admin panel the next time they sign in.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Their customer account and order history are untouched — this only
+            removes the staff role.
+          </p>
+        </div>
+        <div className="border-t px-6 py-4 flex gap-2 bg-muted/30">
+          <Button variant="destructive" className="flex-1 gap-2" onClick={onConfirm} disabled={working}>
+            {working && <Loader2 className="h-4 w-4 animate-spin" />} Revoke
+          </Button>
+          <Button variant="outline" onClick={onCancel} disabled={working}>Cancel</Button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

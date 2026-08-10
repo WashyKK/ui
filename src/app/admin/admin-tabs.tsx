@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import AdminForm from "./product-form";
-import CategoriesForm from "./categories-form";
+import ProductsPanel from "./products-panel";
+import CategoriesPanel from "./categories-panel";
 import UsersPanel from "./users-panel";
 import OrdersPanel from "./orders-panel";
 
@@ -42,8 +42,8 @@ export default function AdminTabs({ isAdmin }: Props) {
       </div>
 
       {active === "orders" && <OrdersPanel />}
-      {active === "products" && <AdminForm />}
-      {active === "categories" && isAdmin && <CategoriesForm />}
+      {active === "products" && <ProductsPanel />}
+      {active === "categories" && isAdmin && <CategoriesPanel />}
       {active === "users" && isAdmin && <UsersPanel />}
     </div>
   );

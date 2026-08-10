@@ -19,22 +19,47 @@ export async function POST(req: Request) {
 
   const email = user.email;
   const adminEmail = process.env.ADMIN_EMAIL;
+  const jar = await cookies();
 
-  // Admin check
+  // ADMIN_EMAIL is the bootstrap owner: always an admin, and deliberately not
+  // revocable from the panel, so a mistake in user_roles cannot lock everyone
+  // out of the store.
   if (adminEmail && email === adminEmail.toLowerCase()) {
-    (await cookies()).set("admin", "1", COOKIE_OPTS);
+    jar.set("admin", "1", COOKIE_OPTS);
     return NextResponse.json({ ok: true, role: "admin" });
   }
 
-  // Manager check
-  const { data: role } = await supabaseServer
+  // select("*") rather than naming accepted_at: on a database that has not had
+  // platform_admins.sql applied, naming a missing column fails the whole query
+  // and every manager would be locked out.
+  const { data: grant } = await supabaseServer
     .from("user_roles")
-    .select("role")
+    .select("*")
     .eq("email", email)
-    .single();
+    .maybeSingle();
 
-  if (role?.role === "store_manager") {
-    (await cookies()).set("manager", "1", COOKIE_OPTS);
+  if (!grant) {
+    return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+  }
+
+  // Record the first sign-in so the panel can distinguish an invite that has
+  // been taken up from one still outstanding.
+  if ("accepted_at" in grant && !grant.accepted_at) {
+    await supabaseServer
+      .from("user_roles")
+      .update({ accepted_at: new Date().toISOString() })
+      .eq("email", email)
+      // Pre-migration the column is absent; a failed stamp must not block sign-in.
+      .then(undefined, () => undefined);
+  }
+
+  if (grant.role === "admin") {
+    jar.set("admin", "1", COOKIE_OPTS);
+    return NextResponse.json({ ok: true, role: "admin" });
+  }
+
+  if (grant.role === "store_manager") {
+    jar.set("manager", "1", COOKIE_OPTS);
     return NextResponse.json({ ok: true, role: "store_manager" });
   }
 
