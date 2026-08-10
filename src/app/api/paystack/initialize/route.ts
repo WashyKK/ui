@@ -3,8 +3,15 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { initializeTransaction, isPaystackConfigured } from "@/lib/paystack";
 import { CartPricingError, generateOrderNumber, priceCart } from "@/lib/orders";
 import { getShippingLabel } from "@/lib/shipping";
+import { isDomesticZone, isValidKraPin, normalizeKenyanPhone } from "@/lib/kenya";
 
 export const dynamic = "force-dynamic";
+
+/** Trim to a value worth storing, or null — never an empty string. */
+const str = (v: unknown): string | null => {
+  const s = String(v ?? "").trim();
+  return s.length ? s.slice(0, 500) : null;
+};
 
 export async function POST(req: Request) {
   if (!isPaystackConfigured()) {
@@ -20,7 +27,24 @@ export async function POST(req: Request) {
   }
 
   const shippingZone = String(body.shippingZone ?? "");
-  const phone = body.phone ? String(body.phone).trim() : undefined;
+  const rawPhone = body.phone ? String(body.phone).trim() : "";
+  const phone = rawPhone ? normalizeKenyanPhone(rawPhone) ?? rawPhone : undefined;
+
+  const d = body.delivery ?? {};
+  const b = body.business ?? {};
+
+  if (!String(d.recipientName ?? "").trim()) {
+    return NextResponse.json({ error: "A recipient name is required" }, { status: 400 });
+  }
+  if (isDomesticZone(shippingZone) && !String(d.town ?? "").trim()) {
+    return NextResponse.json({ error: "A delivery town is required" }, { status: 400 });
+  }
+  if (!isDomesticZone(shippingZone) && shippingZone && !String(d.line1 ?? "").trim()) {
+    return NextResponse.json({ error: "A street address is required" }, { status: 400 });
+  }
+  if (b.kraPin && !isValidKraPin(String(b.kraPin))) {
+    return NextResponse.json({ error: "That KRA PIN is not valid" }, { status: 400 });
+  }
 
   let priced;
   try {
@@ -56,6 +80,23 @@ export async function POST(req: Request) {
     shipping_amount: priced.shippingUsd || null,
     quantity: priced.items.reduce((sum, i) => sum + i.quantity, 0),
     amount_total: Math.round(priced.totalUsd * 100),
+
+    recipient_name: str(d.recipientName),
+    delivery_county: str(d.county),
+    delivery_town: str(d.town),
+    delivery_landmark: str(d.landmark),
+    pickup_point: str(d.pickupPoint),
+    delivery_notes: str(d.notes),
+    address_line1: str(d.line1),
+    address_city: str(d.city),
+    address_state: str(d.state),
+    address_postcode: str(d.postcode),
+    address_country: str(d.country),
+
+    company_name: str(b.companyName),
+    kra_pin: str(b.kraPin)?.toUpperCase() ?? null,
+    po_reference: str(b.poReference),
+    terms_accepted_at: body.termsAccepted ? new Date().toISOString() : null,
   });
 
   if (insertError) {
