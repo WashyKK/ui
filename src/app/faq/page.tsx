@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FAQ_GROUPS } from "@/lib/faq-content";
+import { JsonLd, faqSchema } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "Support & FAQ",
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 export default function FaqPage() {
   return (
     <div className="max-w-2xl mx-auto py-6">
+      <JsonLd data={faqSchema()} />
       <p className="label-micro text-muted-foreground mb-3">Support</p>
       <h1 className="display-headline text-4xl sm:text-5xl mb-4">Questions</h1>
       <p className="text-muted-foreground mb-12 max-w-prose">

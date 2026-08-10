@@ -9,6 +9,8 @@ import CartDrawer from "@/components/cart-drawer";
 import { CartProvider } from "@/context/cart";
 import { UserProvider } from "@/context/user";
 import { CurrencyProvider } from "@/context/currency";
+import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
+import { JsonLd, organizationSchema } from "@/lib/json-ld";
 
 // Three roles: Inter reads long, Inter Tight compresses headlines without a
 // second typeface, and JetBrains Mono carries part numbers and spec values,
@@ -28,8 +30,19 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Elffie Robotics",
-  description: "Enterprise robotics and AI systems.",
+  // metadataBase makes every relative OG/canonical URL absolute. Without it
+  // Next emits paths, which crawlers and link unfurlers cannot resolve.
+  metadataBase: new URL(siteUrl()),
+  title: {
+    default: `${SITE_NAME} — industrial parts, datasheet on every product`,
+    template: `%s — ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "en_KE",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -39,7 +52,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" className={`${sans.variable} ${display.variable} ${mono.variable}`}>
-      <head />
+      <head>
+        <JsonLd data={organizationSchema()} />
+      </head>
       <body className="min-h-screen flex flex-col bg-background font-sans text-foreground antialiased">
         <CurrencyProvider>
         <UserProvider>
