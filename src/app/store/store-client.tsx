@@ -16,10 +16,10 @@ const SORT_OPTIONS = [
   { value: "name", label: "Name A–Z" },
 ];
 
-function StoreInner() {
+function StoreInner({ initialProducts }: { initialProducts: Product[] }) {
   const searchParams = useSearchParams();
-  const [products, setProducts] = React.useState<Product[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [products, setProducts] = React.useState<Product[]>(initialProducts);
+  const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [search, setSearch] = React.useState("");
   // The footer links here as /store?category=…, which is the only crawlable
@@ -40,9 +40,6 @@ function StoreInner() {
       .finally(() => setLoading(false));
   }, []);
 
-  React.useEffect(() => {
-    load();
-  }, [load]);
 
   const categories = React.useMemo(() => {
     const cats = Array.from(
@@ -238,10 +235,10 @@ function StoreInner() {
  * useSearchParams opts the page into client-side rendering, so it must sit
  * inside a Suspense boundary or the whole route de-opts at build time.
  */
-export default function Store() {
+export default function StoreClient({ initialProducts }: { initialProducts: Product[] }) {
   return (
     <React.Suspense fallback={<div className="py-24" />}>
-      <StoreInner />
+      <StoreInner initialProducts={initialProducts} />
     </React.Suspense>
   );
 }

@@ -1,5 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ChevronRight, Download, FileText } from "lucide-react";
 import { supabaseServer } from "@/lib/supabaseServer";
 import ProductActions from "@/components/product-actions";
@@ -7,7 +8,48 @@ import ProductGallery from "@/components/product-gallery";
 import ProductDescription from "@/components/product-description";
 import RelatedProducts from "@/components/related-products";
 import { PriceDisplay } from "@/components/price-display";
-import { galleryFor, toProduct, type RelatedProduct } from "@/components/types";
+import { galleryFor, toProduct, type Product, type RelatedProduct } from "@/components/types";
+import { isUuid, productPath } from "@/lib/slug";
+import { findProductBy } from "@/lib/products-query";
+import { absoluteUrl } from "@/lib/site";
+import { getUsdToKesRate, usdToKes } from "@/lib/fx";
+import { JsonLd, breadcrumbSchema, productSchema } from "@/lib/json-ld";
+
+/** Resolve by slug or by legacy UUID — old links must keep working. */
+async function findProduct(idOrSlug: string) {
+  return findProductBy(isUuid(idOrSlug) ? "id" : "slug", idOrSlug);
+}
+
+export async function generateMetadata(
+  { params }: { params: { id: string } }
+): Promise<Metadata> {
+  const row = await findProduct(params.id);
+  if (!row) return {};
+
+  const product = toProduct(row);
+  const title = product.mpn ? `${product.name} — ${product.mpn}` : product.name;
+  const description =
+    (product.description ?? "").replace(/[#*`]/g, "").trim().slice(0, 155) ||
+    `${product.name}. In stock, datasheet included, shipped countrywide from Nairobi.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: absoluteUrl(productPath({ id: row.id, slug: row.slug })) },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url: absoluteUrl(productPath({ id: row.id, slug: row.slug })),
+      images: product.imageUrl ? [{ url: product.imageUrl, alt: product.name }] : undefined,
+    },
+    twitter: {
+      card: product.imageUrl ? "summary_large_image" : "summary",
+      title,
+      description,
+    },
+  };
+}
 
 function StockBadge({ stock }: { stock: number }) {
   if (stock === 0) {
@@ -63,13 +105,12 @@ async function getRelated(productId: string): Promise<RelatedProduct[]> {
 }
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
-  const { data: p, error } = await supabaseServer
-    .from("products")
-    .select("*, product_images(url, alt, position)")
-    .eq("id", params.id)
-    .single();
+  const p = await findProduct(params.id);
+  if (!p) return notFound();
 
-  if (error || !p) return notFound();
+  // Old UUID links keep resolving, but send them on to the readable URL so the
+  // canonical form is the one that gets shared and indexed.
+  if (isUuid(params.id) && p.slug) redirect(`/product/${p.slug}`);
 
   const product = toProduct(p);
   const images = galleryFor(product);
@@ -78,8 +119,20 @@ export default async function ProductPage({ params }: { params: { id: string } }
   // Relations live in a table that may not exist yet on an un-migrated database.
   const related = await getRelated(product.id).catch(() => [] as RelatedProduct[]);
 
+  const kesPrice = usdToKes(product.price, getUsdToKesRate());
+
   return (
     <div className="space-y-14">
+      <JsonLd data={productSchema(product, kesPrice)} />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Catalogue", path: "/store" },
+          ...(product.category
+            ? [{ name: product.category, path: `/store?category=${encodeURIComponent(product.category)}` }]
+            : []),
+          { name: product.name, path: productPath({ id: product.id, slug: p.slug }) },
+        ])}
+      />
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/store" className="hover:text-foreground transition-colors">Catalogue</Link>
         {product.category && (

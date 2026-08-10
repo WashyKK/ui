@@ -1,17 +1,15 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { canManageProducts } from "@/lib/auth-check";
+import { listProducts } from "@/lib/products-query";
 
 export async function GET() {
-  const { data, error } = await supabaseServer
-    .from("products")
-    .select("*, product_images(url, alt, position)")
-    .order("created_at", { ascending: false });
+  const { data, error } = await listProducts();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json({ products: data ?? [] });
+  return NextResponse.json({ products: data });
 }
 
 export async function POST(req: Request) {
