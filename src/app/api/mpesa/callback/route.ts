@@ -85,11 +85,11 @@ export async function POST(req: Request) {
         to: order.email,
         orderRef: (mpesaMeta.MpesaReceiptNumber || checkoutRequestId.slice(-8)).toUpperCase(),
         items: resolvedItems,
-        subtotalUSD,
-        shippingUSD,
+        subtotalUsd: subtotalUSD,
+        shippingUsd: shippingUSD,
         shippingZone: order.shipping_zone || "",
         paymentMethod: "mpesa",
-        mpesaReceipt: mpesaMeta.MpesaReceiptNumber,
+        receipt: mpesaMeta.MpesaReceiptNumber,
       }).catch(() => {});
     }
   }

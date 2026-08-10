@@ -68,8 +68,8 @@ export async function POST(req: Request) {
         to: email,
         orderRef: session.id.slice(-8).toUpperCase(),
         items: resolvedItems,
-        subtotalUSD,
-        shippingUSD: shippingAmount,
+        subtotalUsd: subtotalUSD,
+        shippingUsd: shippingAmount,
         shippingZone,
         paymentMethod: "stripe",
       }).catch(() => {});

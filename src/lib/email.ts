@@ -13,26 +13,38 @@ interface SendOrderConfirmationParams {
   to: string;
   orderRef: string;
   items: OrderItem[];
-  subtotalUSD: number;
-  shippingUSD: number;
+  subtotalUsd: number;
+  shippingUsd: number;
   shippingZone: string;
-  paymentMethod: "stripe" | "mpesa";
-  mpesaReceipt?: string;
+  paymentMethod: "paystack" | "stripe" | "mpesa";
+  /** M-Pesa receipt or card reference, whichever the provider gave us. */
+  receipt?: string;
 }
 
+const PAYMENT_LABELS: Record<SendOrderConfirmationParams["paymentMethod"], string> = {
+  paystack: "M-Pesa or card",
+  stripe: "Card",
+  mpesa: "M-Pesa",
+};
+
 export async function sendOrderConfirmation(params: SendOrderConfirmationParams) {
-  if (!resend) return; // Resend not configured — skip silently
+  // Without a key this is a no-op, which is why a broken email pipeline can go
+  // unnoticed — the caller sees success either way. Set RESEND_API_KEY.
+  if (!resend) {
+    console.warn(`RESEND_API_KEY unset — no confirmation sent for ${params.orderRef}`);
+    return;
+  }
 
   const {
-    to, orderRef, items, subtotalUSD, shippingUSD, shippingZone,
-    paymentMethod, mpesaReceipt,
+    to, orderRef, items, subtotalUsd, shippingUsd, shippingZone,
+    paymentMethod, receipt,
   } = params;
 
-  const totalUSD = subtotalUSD + shippingUSD;
+  const totalUSD = subtotalUsd + shippingUsd;
+  const subtotalUSD = subtotalUsd;
+  const shippingUSD = shippingUsd;
   const shippingLabel = getShippingLabel(shippingZone);
-  const paymentLabel = paymentMethod === "mpesa"
-    ? `M-Pesa${mpesaReceipt ? ` (${mpesaReceipt})` : ""}`
-    : "Card (Stripe)";
+  const paymentLabel = `${PAYMENT_LABELS[paymentMethod]}${receipt ? ` (${receipt})` : ""}`;
 
   const itemRows = items.map((i) =>
     `<tr>
