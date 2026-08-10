@@ -142,6 +142,10 @@ export default function AdminForm() {
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [category, setCategory] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [mpn, setMpn] = useState("");
+  const [sku, setSku] = useState("");
+  const [manufacturer, setManufacturer] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [imageUrl, setImageUrl] = useState("");
   const [datasheetFile, setDatasheetFile] = useState<File | null>(null);
@@ -182,6 +186,10 @@ export default function AdminForm() {
           price: Number(price),
           stock: Number(stock || 0),
           category,
+          categoryId: categoryId || null,
+          mpn,
+          sku,
+          manufacturer,
           imageUrl,
           datasheetUrl,
         }),
@@ -273,7 +281,17 @@ export default function AdminForm() {
         </div>
         <div>
           <Label htmlFor="description">Description</Label>
-          <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <textarea
+            id="description"
+            rows={6}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={"Markdown is supported.\n\n**Bold**, *italic*, `code`, [links](https://…)\n- bullet lists\n## headings"}
+            className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Markdown. Raw HTML is escaped, not rendered.
+          </p>
         </div>
         <div>
           <Label htmlFor="price">Price (USD)</Label>
@@ -283,17 +301,42 @@ export default function AdminForm() {
           <Label htmlFor="stock">Stock</Label>
           <Input id="stock" type="number" min="0" value={stock} onChange={(e) => setStock(e.target.value)} />
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="mpn">Manufacturer part no.</Label>
+            <Input
+              id="mpn" value={mpn} onChange={(e) => setMpn(e.target.value)}
+              placeholder="17HS4401"
+            />
+            <p className="text-xs text-muted-foreground mt-1">What buyers search for.</p>
+          </div>
+          <div>
+            <Label htmlFor="manufacturer">Manufacturer</Label>
+            <Input
+              id="manufacturer" value={manufacturer}
+              onChange={(e) => setManufacturer(e.target.value)} placeholder="Omron"
+            />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="sku">Stock code (optional)</Label>
+          <Input id="sku" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Internal reference" />
+        </div>
         <div>
           <Label htmlFor="category">Category</Label>
           <select
             id="category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            value={categoryId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setCategoryId(id);
+              setCategory(categories.find((c) => c.id === id)?.name ?? "");
+            }}
+            className="h-10 w-full rounded-sm border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">— Select a category —</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.name}>{c.name}</option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </div>
