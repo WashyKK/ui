@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { sendOrderConfirmation } from "@/lib/email";
+import { decrementStock } from "@/lib/stock";
 
 export async function POST(req: Request) {
   const secret = process.env.STRIPE_SECRET_KEY;
@@ -37,19 +38,7 @@ export async function POST(req: Request) {
     }
 
     // Decrement stock for all items
-    for (const item of cartItems) {
-      const { data: prod } = await supabaseServer
-        .from("products")
-        .select("stock")
-        .eq("id", item.productId)
-        .single();
-      if (prod) {
-        await supabaseServer
-          .from("products")
-          .update({ stock: Math.max(0, Number(prod.stock) - item.quantity) })
-          .eq("id", item.productId);
-      }
-    }
+    await decrementStock(cartItems.map((i) => ({ id: i.productId, quantity: i.quantity })));
 
     await supabaseServer.from("orders").upsert({
       stripe_session_id: session.id,
