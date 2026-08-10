@@ -14,6 +14,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (typeof body.price === "number") update.price = body.price;
   if (typeof body.stock === "number") update.stock = body.stock;
   if (typeof body.category === "string") update.category = body.category;
+  if (body.categoryId !== undefined) update.category_id = body.categoryId || null;
+  if (body.sku !== undefined) update.sku = String(body.sku).trim() || null;
+  if (body.mpn !== undefined) update.mpn = String(body.mpn).trim() || null;
+  if (body.manufacturer !== undefined) {
+    update.manufacturer = String(body.manufacturer).trim() || null;
+  }
   if (typeof body.imageUrl === "string") update.image_url = body.imageUrl;
   if (typeof body.datasheetUrl === "string") update.datasheet_url = body.datasheetUrl;
 

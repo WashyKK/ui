@@ -5,7 +5,7 @@ import { canManageProducts } from "@/lib/auth-check";
 export async function GET() {
   const { data, error } = await supabaseServer
     .from("products")
-    .select("id, name, description, price, stock, category, image_url, datasheet_url, created_at, updated_at")
+    .select("*, product_images(url, alt, position)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -30,6 +30,10 @@ export async function POST(req: Request) {
     price: body.price,
     stock: body.stock ?? 0,
     category: body.category ?? null,
+    category_id: body.categoryId ?? null,
+    sku: body.sku?.trim() || null,
+    mpn: body.mpn?.trim() || null,
+    manufacturer: body.manufacturer?.trim() || null,
     image_url: body.imageUrl ?? null,
     datasheet_url: body.datasheetUrl ?? null,
   }).select("*").single();
