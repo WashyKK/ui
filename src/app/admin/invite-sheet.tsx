@@ -52,12 +52,16 @@ export default function InviteSheet({ open, existing, onClose, onSaved }: Invite
   const [role, setRole] = useState<Role>("store_manager");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // What actually happened, so the sheet can say so rather than implying an
+  // email went out when none did.
+  const [result, setResult] = useState<{ email: string; emailed: boolean } | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setEmail(existing?.email ?? "");
     setRole((existing?.role as Role) ?? "store_manager");
     setError(null);
+    setResult(null);
   }, [open, existing]);
 
   const submit = async (e: React.FormEvent) => {
@@ -73,7 +77,10 @@ export default function InviteSheet({ open, existing, onClose, onSaved }: Invite
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Could not save that");
       onSaved();
-      onClose();
+      // Access is live either way. Only close straight away when the email
+      // actually sent; otherwise hold the sheet open to say it did not.
+      if (data.emailed) onClose();
+      else setResult({ email: email.trim(), emailed: false });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -88,6 +95,32 @@ export default function InviteSheet({ open, existing, onClose, onSaved }: Invite
           <SheetTitle>{existing ? "Change access" : "Invite someone"}</SheetTitle>
         </SheetHeader>
 
+        {result ? (
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+            <div className="rounded-sm border p-4 space-y-2">
+              <p className="text-sm font-medium">Access granted — but no email was sent</p>
+              <p className="text-sm text-muted-foreground">
+                <span className="text-foreground">{result.email}</span> can sign in
+                right now and will have {role === "admin" ? "platform admin" : "store manager"}{" "}
+                access immediately. Nothing is pending on their side.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Outbound email is not configured, so nobody told them. Set
+                <code className="mx-1 rounded-sm bg-muted px-1">RESEND_API_KEY</code>
+                and verify the sending domain to have this sent automatically.
+              </p>
+            </div>
+            <div className="rounded-sm border p-4 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Tell them yourself</p>
+              <p className="text-sm">
+                Ask them to sign in with Google using that exact address:
+              </p>
+              <code className="block rounded-sm bg-muted px-2 py-1.5 text-xs break-all">
+                {typeof window !== "undefined" ? `${window.location.origin}/admin/login` : "/admin/login"}
+              </code>
+            </div>
+          </div>
+        ) : (
         <form onSubmit={submit} className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
           <div>
             <Label htmlFor="invite-email">Email address</Label>
@@ -154,15 +187,22 @@ export default function InviteSheet({ open, existing, onClose, onSaved }: Invite
             </p>
           )}
         </form>
+        )}
 
         <div className="border-t px-6 py-4 flex gap-2 bg-muted/30">
-          <Button onClick={submit} disabled={saving} className="flex-1 gap-2">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {existing ? "Save access" : "Send invite"}
-          </Button>
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
+          {result ? (
+            <Button onClick={onClose} className="flex-1">Done</Button>
+          ) : (
+            <>
+              <Button onClick={submit} disabled={saving} className="flex-1 gap-2">
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {existing ? "Save access" : "Grant access"}
+              </Button>
+              <Button variant="outline" onClick={onClose} disabled={saving}>
+                Cancel
+              </Button>
+            </>
+          )}
         </div>
       </SheetContent>
     </Sheet>

@@ -3,6 +3,10 @@ import { getShippingLabel } from "./shipping";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+// Overridable, because the sending domain has to be verified in Resend and
+// "orders@" is the wrong sender for a staff invite.
+const FROM = process.env.RESEND_FROM || "Elffie Robotics <orders@elffie.com>";
+
 interface OrderItem {
   name: string;
   quantity: number;
@@ -27,6 +31,102 @@ const PAYMENT_LABELS: Record<SendOrderConfirmationParams["paymentMethod"], strin
   mpesa: "M-Pesa",
 };
 
+/** Whether outbound mail can actually be sent. Callers surface this rather than pretending. */
+export function isEmailConfigured(): boolean {
+  return Boolean(resend);
+}
+
+interface SendStaffInviteParams {
+  to: string;
+  role: "admin" | "store_manager";
+  /** Where they sign in — the invite is useless without it. */
+  signInUrl: string;
+  invitedBy?: string | null;
+}
+
+const ROLE_COPY = {
+  admin: {
+    title: "platform admin",
+    can: [
+      "Add, edit and remove products",
+      "Manage categories",
+      "See and fulfil orders",
+      "Invite other admins and store managers",
+    ],
+  },
+  store_manager: {
+    title: "store manager",
+    can: [
+      "Add, edit and remove products",
+      "Upload images and datasheets",
+      "See and fulfil orders",
+    ],
+  },
+} as const;
+
+/**
+ * Tell someone they have been given access.
+ *
+ * There is no accept-token: the grant is already live against their email
+ * address, so this is a notification and a sign-in link rather than an
+ * invitation they have to redeem. That means a lost email costs nothing —
+ * they can still sign in — but it also means the address must be right.
+ */
+export async function sendStaffInvite({
+  to, role, signInUrl, invitedBy,
+}: SendStaffInviteParams): Promise<boolean> {
+  if (!resend) {
+    console.warn(`RESEND_API_KEY unset — no invite email sent to ${to}`);
+    return false;
+  }
+
+  const copy = ROLE_COPY[role];
+  const items = copy.can
+    .map((line) => `<li style="margin-bottom:4px">${line}</li>`)
+    .join("");
+
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `You have been added to Elffie Robotics as a ${copy.title}`,
+      html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f2f3f5;font-family:Inter,system-ui,sans-serif">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border:1px solid #e3e5e8">
+    <div style="background:#1a1c1f;padding:24px 28px">
+      <h1 style="margin:0;color:#fff;font-size:18px;font-weight:600;letter-spacing:-0.02em">Elffie Robotics</h1>
+      <p style="margin:4px 0 0;color:#8a8f94;font-size:12px">Staff access</p>
+    </div>
+    <div style="padding:28px">
+      <p style="margin:0 0 16px;color:#1a1c1f;font-size:15px">
+        ${invitedBy ? `${invitedBy} has given` : "You have been given"} you
+        <strong>${copy.title}</strong> access to the Elffie Robotics store.
+      </p>
+      <p style="margin:0 0 8px;color:#8a8f94;font-size:13px">You can:</p>
+      <ul style="margin:0 0 22px;padding-left:18px;color:#3d4146;font-size:13px">${items}</ul>
+      <a href="${signInUrl}" style="display:inline-block;background:#1a1c1f;color:#fff;padding:11px 20px;font-size:14px;text-decoration:none">Sign in</a>
+      <p style="margin:22px 0 0;font-size:12px;color:#8a8f94">
+        Sign in with Google using <strong style="color:#3d4146">${to}</strong> — access is tied to
+        that address. There is nothing to accept; it works the first time you sign in.
+      </p>
+      <p style="margin:12px 0 0;font-size:12px;color:#8a8f94">
+        Not expecting this? Ignore it, or reply to have the access removed.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`,
+    });
+    return true;
+  } catch (err: any) {
+    console.error(`Invite email to ${to} failed:`, err?.message);
+    return false;
+  }
+}
+
 interface SendBackInStockParams {
   to: string;
   productName: string;
@@ -50,7 +150,7 @@ export async function sendBackInStock({
       : `${stock} units are available.`;
 
   await resend.emails.send({
-    from: "Elffie Robotics <orders@elffie.com>",
+    from: FROM,
     to,
     subject: `Back in stock — ${productName}`,
     html: `
@@ -161,7 +261,7 @@ export async function sendOrderConfirmation(params: SendOrderConfirmationParams)
 </html>`;
 
   await resend.emails.send({
-    from: "Elffie Robotics <orders@elffie.com>",
+    from: FROM,
     to,
     subject: `Order confirmed — ${orderRef}`,
     html,

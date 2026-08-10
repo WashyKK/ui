@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { isAdminRequest } from "@/lib/auth-check";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { isEmailConfigured, sendStaffInvite } from "@/lib/email";
+import { absoluteUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +55,24 @@ export async function POST(req: Request) {
 
   // The grant lands whether or not this person has an account yet: sign-in
   // resolves by address, so inviting someone who has never visited works.
-  return NextResponse.json({ ok: true, email, role });
+  //
+  // The email is a courtesy, not the mechanism — access is already live. So a
+  // failed send must not fail the grant, but it must be reported rather than
+  // swallowed, or the admin is left believing something was sent.
+  const emailed = await sendStaffInvite({
+    to: email,
+    role,
+    signInUrl: absoluteUrl("/admin/login"),
+    invitedBy: await actingAdminEmail(),
+  }).catch(() => false);
+
+  return NextResponse.json({
+    ok: true,
+    email,
+    role,
+    emailed,
+    emailConfigured: isEmailConfigured(),
+  });
 }
 
 export async function DELETE(req: Request) {
