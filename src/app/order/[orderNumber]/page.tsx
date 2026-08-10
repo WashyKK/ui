@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function OrderPage({ params }: { params: { orderNumber: string } }) {
-  return <OrderView orderNumber={params.orderNumber.toUpperCase()} />;
+export default async function OrderPage({ params }: { params: Promise<{ orderNumber: string }> }) {
+  const { orderNumber } = await params;
+  return <OrderView orderNumber={orderNumber.toUpperCase()} />;
 }

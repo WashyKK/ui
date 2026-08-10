@@ -3,9 +3,10 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { canManageProducts } from "@/lib/auth-check";
 import { notifyBackInStock } from "@/lib/stock-alerts";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await canManageProducts())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id: productId } = await params;
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
@@ -29,13 +30,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const { data: before } = await supabaseServer
     .from("products")
     .select("stock")
-    .eq("id", params.id)
+    .eq("id", productId)
     .maybeSingle();
 
   const { data, error } = await supabaseServer
     .from("products")
     .update(update)
-    .eq("id", params.id)
+    .eq("id", productId)
     .select("*")
     .single();
 
@@ -46,7 +47,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (wasOutOfStock && Number(data.stock) > 0) {
     // Never let a notification failure fail the edit — the stock change is the
     // thing that had to succeed.
-    notified = await notifyBackInStock(params.id).catch((err) => {
+    notified = await notifyBackInStock(productId).catch((err) => {
       console.error("back-in-stock notification failed:", err?.message);
       return 0;
     });
@@ -55,13 +56,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json({ product: data, notified });
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await canManageProducts())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { error } = await supabaseServer
     .from("products")
     .delete()
-    .eq("id", params.id);
+    .eq("id", (await params).id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

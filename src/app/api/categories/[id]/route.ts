@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabaseServer";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const isAdmin = (await cookies()).get("admin")?.value === "1";
   if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -14,7 +14,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const { data, error } = await supabaseServer
     .from("categories")
     .update({ name: body.name.trim(), description: body.description?.trim() || null })
-    .eq("id", params.id)
+    .eq("id", (await params).id)
     .select("*")
     .single();
 
@@ -22,14 +22,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json({ category: data });
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const isAdmin = (await cookies()).get("admin")?.value === "1";
   if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { error } = await supabaseServer
     .from("categories")
     .delete()
-    .eq("id", params.id);
+    .eq("id", (await params).id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

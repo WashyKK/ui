@@ -23,9 +23,10 @@ async function findProduct(idOrSlug: string) {
 }
 
 export async function generateMetadata(
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<Metadata> {
-  const row = await findProduct(params.id);
+  const { id } = await params;
+  const row = await findProduct(id);
   if (!row) return {};
 
   const product = toProduct(row);
@@ -124,13 +125,14 @@ async function getRelated(productId: string): Promise<RelatedProduct[]> {
     .filter(Boolean) as RelatedProduct[];
 }
 
-export default async function ProductPage({ params }: { params: { id: string } }) {
-  const p = await findProduct(params.id);
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const p = await findProduct(id);
   if (!p) return notFound();
 
   // Old UUID links keep resolving, but send them on to the readable URL so the
   // canonical form is the one that gets shared and indexed.
-  if (isUuid(params.id) && p.slug) redirect(`/product/${p.slug}`);
+  if (isUuid(id) && p.slug) redirect(`/product/${p.slug}`);
 
   const product = toProduct(p);
   const images = galleryFor(product);
