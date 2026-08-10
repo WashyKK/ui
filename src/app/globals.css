@@ -2,76 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Machine Shop — an industrial catalogue palette.
+ *
+ * Near-monochrome by design: white ground, obsidian ink, five steps of warm-grey
+ * between them, and exactly one chromatic colour (signal green) reserved for
+ * "this is live / in stock". Nothing else competes with the product photography
+ * or the spec tables, which is the point for a parts catalogue.
+ */
 @layer base {
   :root {
+    --bone: 220 13% 95%;
+    --steel: 210 8% 80%;
+    --graphite: 210 4% 56%;
+    --charcoal: 213 7% 26%;
+    --obsidian: 216 9% 11%;
+    --signal: 142 71% 45%;
+
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%; /* corporate slate */
+    --foreground: 216 9% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 216 9% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 222 47% 11%; /* deep navy */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 210 20% 97%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 16% 93%;
-    --muted-foreground: 215 16% 35%;
-    --accent: 217 91% 60%; /* brand blue */
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 216 9% 11%;
+    --primary: 216 9% 11%;
+    --primary-foreground: 220 13% 95%;
+    --secondary: 220 13% 95%;
+    --secondary-foreground: 216 9% 11%;
+    --muted: 220 13% 95%;
+    --muted-foreground: 210 4% 56%;
+    --accent: 210 8% 80%;
+    --accent-foreground: 216 9% 11%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
-    --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 216 10% 90%;
+    --input: 216 10% 90%;
+    --ring: 213 7% 26%;
+
+    /* Near-square corners. This is a catalogue, not a consumer app. */
+    --radius: 0.125rem;
+
+    --chart-1: 142 71% 45%;
+    --chart-2: 213 7% 26%;
+    --chart-3: 210 4% 56%;
+    --chart-4: 210 8% 80%;
+    --chart-5: 216 9% 11%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 216 9% 11%;
+    --sidebar-primary: 216 9% 11%;
+    --sidebar-primary-foreground: 220 13% 95%;
+    --sidebar-accent: 220 13% 95%;
+    --sidebar-accent-foreground: 216 9% 11%;
+    --sidebar-border: 216 10% 90%;
+    --sidebar-ring: 210 4% 56%;
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 14% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 225 14% 17%;
-    --muted-foreground: 215 16% 75%;
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 220 9% 6%;
+    --foreground: 220 13% 95%;
+    --card: 216 9% 11%;
+    --card-foreground: 220 13% 95%;
+    --popover: 216 9% 11%;
+    --popover-foreground: 220 13% 95%;
+    --primary: 220 13% 95%;
+    --primary-foreground: 216 9% 11%;
+    --secondary: 210 11% 15%;
+    --secondary-foreground: 220 13% 95%;
+    --muted: 210 11% 15%;
+    --muted-foreground: 210 4% 56%;
+    --accent: 213 7% 26%;
+    --accent-foreground: 220 13% 95%;
+    --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 18%;
-    --input: 220 13% 18%;
-    --ring: 217 91% 60%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 214 8% 18%;
+    --input: 214 8% 18%;
+    --ring: 210 4% 56%;
+
+    --chart-1: 142 71% 45%;
+    --chart-2: 210 8% 80%;
+    --chart-3: 210 4% 56%;
+    --chart-4: 213 7% 26%;
+    --chart-5: 220 13% 95%;
+    --sidebar-background: 216 9% 11%;
+    --sidebar-foreground: 220 13% 95%;
+    --sidebar-primary: 142 71% 45%;
+    --sidebar-primary-foreground: 216 9% 11%;
+    --sidebar-accent: 210 11% 15%;
+    --sidebar-accent-foreground: 220 13% 95%;
+    --sidebar-border: 214 8% 18%;
+    --sidebar-ring: 210 4% 56%;
   }
 }
 
@@ -79,9 +98,50 @@
   * {
     @apply border-border;
   }
+  html {
+    font-feature-settings: "ss01", "cv11";
+  }
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/*
+ * A headline that reads like it was stencilled on a crate: heavy, tight, and
+ * set in the condensed display face.
+ */
+.display-headline {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+  text-transform: uppercase;
+}
+
+/* Uppercase micro-label used for eyebrows, spec keys and table headers. */
+.label-micro {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Faint engineering grid, for hero and section grounds. */
+.bg-grid {
+  background-image:
+    linear-gradient(hsl(var(--graphite) / 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--graphite) / 0.09) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* The one place colour appears: a live "in stock" indicator. */
+@keyframes signal-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--signal) / 0.5); }
+  50%      { box-shadow: 0 0 0 6px hsl(var(--signal) / 0); }
+}
+
+.signal-dot {
+  animation: signal-pulse 2s infinite;
 }
 
 /* Animations */
@@ -103,4 +163,8 @@
 .reveal { opacity: 0; }
 .reveal.is-visible { animation: revealUp 420ms ease-out forwards; }
 
-/* removed old marquee styles (replaced by carousel) */
+@media (prefers-reduced-motion: reduce) {
+  .signal-dot { animation: none; }
+  .reveal { opacity: 1; }
+  .reveal.is-visible { animation: none; }
+}

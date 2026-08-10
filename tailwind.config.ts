@@ -18,7 +18,20 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+      },
       colors: {
+        // The industrial ramp, addressable directly for the few places that want
+        // a specific step rather than a semantic role.
+        bone: "hsl(var(--bone))",
+        steel: "hsl(var(--steel))",
+        graphite: "hsl(var(--graphite))",
+        charcoal: "hsl(var(--charcoal))",
+        obsidian: "hsl(var(--obsidian))",
+        signal: "hsl(var(--signal))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

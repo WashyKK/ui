@@ -1,15 +1,31 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import React from "react";
 import { cookies } from "next/headers";
 import TopNav from "@/components/top-nav";
+import SiteFooter from "@/components/site-footer";
 import CartDrawer from "@/components/cart-drawer";
 import { CartProvider } from "@/context/cart";
 import { UserProvider } from "@/context/user";
 import { CurrencyProvider } from "@/context/currency";
 
-const inter = Inter({ subsets: ["latin"] });
+// Three roles: Inter reads long, Inter Tight compresses headlines without a
+// second typeface, and JetBrains Mono carries part numbers and spec values,
+// where a lining monospace makes 0/O and 1/l unambiguous.
+const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const display = Inter_Tight({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["600", "700", "800"],
+  display: "swap",
+});
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["400", "500"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Elffie Robotics",
@@ -22,14 +38,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const serverIsManager = jar.get("manager")?.value === "1";
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${sans.variable} ${display.variable} ${mono.variable}`}>
       <head />
-      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased`}>
+      <body className="min-h-screen flex flex-col bg-background font-sans text-foreground antialiased">
         <CurrencyProvider>
         <UserProvider>
           <CartProvider>
             <TopNav initialIsAdmin={serverIsAdmin} initialIsManager={serverIsManager} />
-            <main className="mx-auto max-w-7xl px-4 sm:px-6 py-8">{children}</main>
+            <main className="flex-1 mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-10 py-8">
+              {children}
+            </main>
+            <SiteFooter />
             <CartDrawer />
           </CartProvider>
         </UserProvider>
