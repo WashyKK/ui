@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import Stripe from "stripe";
 import { supabaseServer } from "@/lib/supabaseServer";
+
+export const metadata: Metadata = {
+  title: "Order confirmed",
+  robots: { index: false, follow: false },
+};
 
 async function recordOrder(sessionId: string) {
   const secret = process.env.STRIPE_SECRET_KEY;
@@ -30,6 +36,10 @@ async function recordOrder(sessionId: string) {
 
   await supabaseServer.from("orders").upsert({
     stripe_session_id: session.id,
+    provider: "stripe",
+    provider_ref: session.id,
+    status: "paid",
+    currency: "USD",
     product_id: cartItems.length === 1 ? cartItems[0].productId : null,
     quantity: cartItems.reduce((s, i) => s + i.quantity, 0),
     amount_total: session.amount_total ?? 0,
@@ -41,50 +51,54 @@ async function recordOrder(sessionId: string) {
 }
 
 export default async function SuccessPage({
+  // Typed loosely and awaited on purpose: searchParams is a plain object on
+  // Next 14 and a promise on Next 16, and awaiting handles both. Reading
+  // `searchParams.session_id` synchronously would return undefined after the
+  // upgrade — the page would still render "Order confirmed" while quietly
+  // recording nothing.
   searchParams,
 }: {
-  searchParams: { session_id?: string };
+  searchParams: any;
 }) {
-  const sessionId = searchParams.session_id;
+  const params = await searchParams;
+  const sessionId: string | undefined = params?.session_id;
   if (sessionId) await recordOrder(sessionId);
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border bg-white dark:bg-zinc-900 shadow-sm p-10 text-center space-y-5">
+      <div className="w-full max-w-md border p-10 text-center space-y-5">
         <div className="flex justify-center">
-          <div className="rounded-full bg-green-50 dark:bg-green-950/40 p-4 border border-green-200 dark:border-green-900">
-            <CheckCircle2 className="h-10 w-10 text-green-600" />
-          </div>
+          <CheckCircle2 className="h-10 w-10 text-signal" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold">Order Confirmed</h1>
+          <h1 className="display-headline text-2xl">Order confirmed</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Thank you for your purchase. A confirmation email has been sent to you.
-            Our team will be in touch with shipping details shortly.
+            Thanks — payment went through. A confirmation is on its way, and
+            we&apos;ll be in touch to arrange delivery.
           </p>
         </div>
         <div className="h-px bg-border" />
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/store"
-            className="px-5 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90 transition"
+            className="px-5 py-2 rounded-sm bg-foreground text-background text-sm hover:opacity-90 transition-opacity"
           >
-            Continue Shopping
+            Back to the catalogue
           </Link>
           <Link
             href="/account/orders"
-            className="px-5 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition"
+            className="px-5 py-2 rounded-sm border text-sm hover:bg-muted transition-colors"
           >
-            View Order History
+            Your orders
           </Link>
         </div>
         <p className="text-xs text-muted-foreground">
           Questions? Email{" "}
           <a
-            href="mailto:washingtonkigan@gmail.com"
+            href="mailto:admin@elffie.com"
             className="underline underline-offset-4 hover:text-foreground"
           >
-            washingtonkigan@gmail.com
+            admin@elffie.com
           </a>
         </p>
       </div>

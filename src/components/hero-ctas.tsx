@@ -9,7 +9,7 @@ export default function HeroCTAs() {
   return (
     <div className="mt-6 flex justify-center gap-3">
       <Link
-        href="mailto:washingtonkigan@gmail.com?subject=Sales%20Inquiry%20%E2%80%94%20Elffie%20Robotics"
+        href="/contact"
         className="px-5 py-2 rounded-lg bg-accent text-white hover:opacity-90 active:opacity-80 transition"
       >
         Talk to Sales

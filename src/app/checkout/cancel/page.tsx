@@ -26,7 +26,7 @@ export default function CancelPage() {
             Back to Store
           </Link>
           <a
-            href="mailto:washingtonkigan@gmail.com?subject=Purchase%20Inquiry%20%E2%80%94%20Elffie%20Robotics"
+            href="/contact"
             className="px-5 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition"
           >
             Contact Sales
@@ -35,7 +35,7 @@ export default function CancelPage() {
         <p className="text-xs text-muted-foreground">
           Need help?{" "}
           <a
-            href="mailto:washingtonkigan@gmail.com"
+            href="/contact"
             className="underline underline-offset-4 hover:text-foreground"
           >
             Reach our team

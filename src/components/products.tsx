@@ -150,7 +150,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
           Try adjusting your search or category filter, or contact us for a tailored solution.
         </p>
         <a
-          href="mailto:washingtonkigan@gmail.com?subject=Product%20Inquiry%20%E2%80%94%20Elffie%20Store"
+          href="/contact"
           className="mt-5 inline-block px-5 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90 transition"
         >
           Contact Sales
