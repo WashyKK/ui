@@ -1,6 +1,58 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Tailwind 4 has no darkMode:"class" config; the variant is declared here. */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Tailwind 4 is CSS-first: the theme lives here rather than in
+ * tailwind.config.ts, which is gone. `inline` means the utilities resolve to
+ * the var() expressions below rather than snapshotting their values, so the
+ * .dark block still swaps every colour at runtime.
+ */
+@theme inline {
+  --color-bone: hsl(var(--bone));
+  --color-steel: hsl(var(--steel));
+  --color-graphite: hsl(var(--graphite));
+  --color-charcoal: hsl(var(--charcoal));
+  --color-obsidian: hsl(var(--obsidian));
+  --color-signal: hsl(var(--signal));
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --font-sans: var(--font-sans), system-ui, sans-serif;
+  --font-display: var(--font-display), system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+
+  /*
+   * Ascending from the design radius, never subtracting from it. The old
+   * Tailwind 3 config derived sm as calc(var(--radius) - 4px), which against a
+   * 2px base is negative and collapsed to square — so `rounded-sm`, the most
+   * used radius utility in this UI, silently rendered 0px.
+   */
+  --radius-sm: var(--radius);
+  --radius-md: calc(var(--radius) + 2px);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+}
 
 /*
  * Machine Shop — an industrial catalogue palette.
@@ -95,8 +147,9 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
+  /* v3 applied a default border colour; v4 uses currentColor unless told. */
+  *, ::after, ::before {
+    border-color: hsl(var(--border));
   }
   html {
     font-feature-settings: "ss01", "cv11";
