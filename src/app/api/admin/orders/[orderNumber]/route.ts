@@ -14,7 +14,7 @@ async function actor(): Promise<string> {
 
 export async function GET(
   _req: Request,
-  { params }: { params: { orderNumber: string } }
+  { params }: { params: Promise<{ orderNumber: string }> }
 ) {
   if (!(await canManageProducts())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,7 +23,7 @@ export async function GET(
   const { data: order } = await supabaseServer
     .from("orders")
     .select("*")
-    .eq("order_number", params.orderNumber.toUpperCase())
+    .eq("order_number", (await params).orderNumber.toUpperCase())
     .maybeSingle();
 
   if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -39,13 +39,13 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { orderNumber: string } }
+  { params }: { params: Promise<{ orderNumber: string }> }
 ) {
   if (!(await canManageProducts())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const orderNumber = params.orderNumber.toUpperCase();
+  const orderNumber = (await params).orderNumber.toUpperCase();
   const body = await req.json().catch(() => ({}));
 
   const { data: order } = await supabaseServer

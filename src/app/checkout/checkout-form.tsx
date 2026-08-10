@@ -125,7 +125,7 @@ export default function CheckoutForm({ paystackEnabled }: { paystackEnabled: boo
         LAST_ORDER_KEY,
         JSON.stringify({ orderNumber: data.orderNumber, email: email.trim() })
       );
-      window.location.href = data.authorizationUrl;
+      window.location.assign(data.authorizationUrl);
     } catch (err: any) {
       setError(err.message);
       setSubmitting(false);
@@ -185,7 +185,7 @@ export default function CheckoutForm({ paystackEnabled }: { paystackEnabled: boo
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Could not start the payment");
-      window.location.href = data.url;
+      window.location.assign(data.url);
     } catch (err: any) {
       setError(err.message);
       setSubmitting(false);

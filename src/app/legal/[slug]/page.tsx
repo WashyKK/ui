@@ -6,14 +6,14 @@ export function generateStaticParams() {
   return Object.keys(LEGAL_PAGES).map((slug) => ({ slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const page = LEGAL_PAGES[params.slug];
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const page = LEGAL_PAGES[(await params).slug];
   if (!page) return {};
   return { title: page.title, description: page.summary };
 }
 
-export default function LegalPage({ params }: { params: { slug: string } }) {
-  const page = LEGAL_PAGES[params.slug];
+export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {
+  const page = LEGAL_PAGES[(await params).slug];
   if (!page) notFound();
 
   return (
