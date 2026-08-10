@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { sendOrderConfirmation } from "@/lib/email";
+import { decrementStock } from "@/lib/stock";
 
 export const dynamic = "force-dynamic";
 
+// Safaricom sends no signature, so this endpoint authenticates two ways: a shared
+// secret carried in the callback URL we registered, and the requirement that the
+// order still be pending. Without both, anyone could POST a synthetic success and
+// mark an order paid.
 export async function POST(req: Request) {
+  const expectedSecret = process.env.MPESA_CALLBACK_SECRET;
+  if (expectedSecret) {
+    const provided = new URL(req.url).searchParams.get("k");
+    if (provided !== expectedSecret) {
+      return NextResponse.json({ ResultCode: 1, ResultDesc: "Rejected" }, { status: 403 });
+    }
+  }
+
   const body = await req.json().catch(() => null);
   const cb = body?.Body?.stkCallback;
   if (!cb) return NextResponse.json({ ok: true });
@@ -16,6 +29,8 @@ export async function POST(req: Request) {
     CallbackMetadata,
   } = cb;
 
+  if (!checkoutRequestId) return NextResponse.json({ ok: true });
+
   const mpesaMeta: Record<string, any> = {};
   for (const item of CallbackMetadata?.Item ?? []) {
     mpesaMeta[item.Name] = item.Value;
@@ -23,6 +38,9 @@ export async function POST(req: Request) {
 
   const status = resultCode === 0 ? "completed" : "failed";
 
+  // Matching on status = 'pending' makes this idempotent and rejects both unknown
+  // ids and replays of an already-settled order: no pending row, no update, no
+  // stock decrement, no email.
   const { data: order } = await supabaseServer
     .from("mpesa_orders")
     .update({
@@ -33,8 +51,9 @@ export async function POST(req: Request) {
       updated_at: new Date().toISOString(),
     })
     .eq("checkout_request_id", checkoutRequestId)
+    .eq("status", "pending")
     .select("product_id, quantity, cart_items, email, shipping_zone, shipping_amount, amount")
-    .single();
+    .maybeSingle();
 
   if (status === "completed" && order) {
     // Resolve items for stock decrement and email
@@ -45,19 +64,7 @@ export async function POST(req: Request) {
       : [];
 
     // Decrement stock
-    for (const item of itemsToProcess) {
-      const { data: p } = await supabaseServer
-        .from("products")
-        .select("stock")
-        .eq("id", item.id)
-        .single();
-      if (p) {
-        await supabaseServer
-          .from("products")
-          .update({ stock: Math.max(0, Number(p.stock) - item.quantity) })
-          .eq("id", item.id);
-      }
-    }
+    await decrementStock(itemsToProcess);
 
     // Send order confirmation email
     if (order.email && itemsToProcess.length) {

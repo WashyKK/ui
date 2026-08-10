@@ -62,6 +62,7 @@ export async function POST(req: Request) {
   }
 
   const origin = new URL(req.url).origin;
+  const callbackSecret = process.env.MPESA_CALLBACK_SECRET;
   const description = resolvedItems.length === 1 ? resolvedItems[0].name.slice(0, 13) : "Elffie Order";
 
   let result;
@@ -71,7 +72,9 @@ export async function POST(req: Request) {
       amount: amountKES,
       accountRef: "ElffieStore",
       description,
-      callbackUrl: `${origin}/api/mpesa/callback`,
+      callbackUrl: callbackSecret
+        ? `${origin}/api/mpesa/callback?k=${encodeURIComponent(callbackSecret)}`
+        : `${origin}/api/mpesa/callback`,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 502 });
