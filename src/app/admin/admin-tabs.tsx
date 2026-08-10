@@ -4,15 +4,19 @@ import { useState } from "react";
 import AdminForm from "./product-form";
 import CategoriesForm from "./categories-form";
 import UsersPanel from "./users-panel";
+import OrdersPanel from "./orders-panel";
 
 interface Props {
   isAdmin: boolean;
 }
 
 export default function AdminTabs({ isAdmin }: Props) {
-  const [active, setActive] = useState("products");
+  // Orders first: the thing that needs attention on any given morning is an
+  // order waiting to be packed, not the product form.
+  const [active, setActive] = useState("orders");
 
   const tabs = [
+    { id: "orders", label: "Orders" },
     { id: "products", label: "Products" },
     ...(isAdmin ? [{ id: "categories", label: "Categories" }] : []),
     ...(isAdmin ? [{ id: "users", label: "Users" }] : []),
@@ -37,6 +41,7 @@ export default function AdminTabs({ isAdmin }: Props) {
         ))}
       </div>
 
+      {active === "orders" && <OrdersPanel />}
       {active === "products" && <AdminForm />}
       {active === "categories" && isAdmin && <CategoriesForm />}
       {active === "users" && isAdmin && <UsersPanel />}
