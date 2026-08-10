@@ -45,8 +45,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const jar = cookies();
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const jar = await cookies();
   const serverIsAdmin = jar.get("admin")?.value === "1";
   const serverIsManager = jar.get("manager")?.value === "1";
 

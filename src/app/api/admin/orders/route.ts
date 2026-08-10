@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 const PAGE_SIZE = 25;
 
 export async function GET(req: Request) {
-  if (!canManageProducts()) {
+  if (!(await canManageProducts())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

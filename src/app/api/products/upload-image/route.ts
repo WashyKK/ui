@@ -5,7 +5,7 @@ import { canManageProducts } from "@/lib/auth-check";
 const ALLOWED = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 
 export async function POST(req: Request) {
-  if (!canManageProducts()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await canManageProducts())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let form: FormData;
   try {

@@ -5,7 +5,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (!isAdminRequest()) {
+  if (!(await isAdminRequest())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

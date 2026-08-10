@@ -12,7 +12,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const isAdmin = cookies().get("admin")?.value === "1";
+  const isAdmin = (await cookies()).get("admin")?.value === "1";
   if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => null);

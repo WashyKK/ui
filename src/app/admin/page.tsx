@@ -2,9 +2,10 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import AdminTabs from "./admin-tabs";
 
-export default function AdminPage() {
-  const isAdmin = cookies().get("admin")?.value === "1";
-  const isManager = cookies().get("manager")?.value === "1";
+export default async function AdminPage() {
+  const jar = await cookies();
+  const isAdmin = jar.get("admin")?.value === "1";
+  const isManager = jar.get("manager")?.value === "1";
 
   if (!isAdmin && !isManager) {
     return (

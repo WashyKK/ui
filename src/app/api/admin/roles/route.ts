@@ -6,7 +6,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  if (!isAdminRequest()) {
+  if (!(await isAdminRequest())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const adminEmail = cookies().get("admin")?.value === "1"
+  const adminEmail = (await cookies()).get("admin")?.value === "1"
     ? process.env.ADMIN_EMAIL
     : null;
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  if (!isAdminRequest()) {
+  if (!(await isAdminRequest())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

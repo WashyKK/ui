@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   // Admin check
   if (adminEmail && email === adminEmail.toLowerCase()) {
-    cookies().set("admin", "1", COOKIE_OPTS);
+    (await cookies()).set("admin", "1", COOKIE_OPTS);
     return NextResponse.json({ ok: true, role: "admin" });
   }
 
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     .single();
 
   if (role?.role === "store_manager") {
-    cookies().set("manager", "1", COOKIE_OPTS);
+    (await cookies()).set("manager", "1", COOKIE_OPTS);
     return NextResponse.json({ ok: true, role: "store_manager" });
   }
 

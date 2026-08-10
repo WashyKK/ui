@@ -6,8 +6,9 @@ import { canTransition, ORDER_STATUSES, type OrderStatus } from "@/lib/order-sta
 
 export const dynamic = "force-dynamic";
 
-function actor(): string {
-  if (cookies().get("admin")?.value === "1") return process.env.ADMIN_EMAIL ?? "admin";
+async function actor(): Promise<string> {
+  const jar = await cookies();
+  if (jar.get("admin")?.value === "1") return process.env.ADMIN_EMAIL ?? "admin";
   return "store_manager";
 }
 
@@ -15,7 +16,7 @@ export async function GET(
   _req: Request,
   { params }: { params: { orderNumber: string } }
 ) {
-  if (!canManageProducts()) {
+  if (!(await canManageProducts())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -40,7 +41,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: { orderNumber: string } }
 ) {
-  if (!canManageProducts()) {
+  if (!(await canManageProducts())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -93,7 +94,7 @@ export async function PATCH(
     from_status: to ? from : null,
     to_status: to,
     note: body.note || null,
-    actor: actor(),
+    actor: await actor(),
   });
 
   return NextResponse.json({ ok: true, status: to ?? from });

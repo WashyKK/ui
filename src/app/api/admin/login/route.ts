@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   }
 
   if (email === adminEmail && password === adminPassword) {
-    cookies().set("admin", "1", {
+    (await cookies()).set("admin", "1", {
       httpOnly: true,
       sameSite: "lax",
       path: "/",

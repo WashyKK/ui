@@ -13,7 +13,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!canManageProducts()) {
+  if (!(await canManageProducts())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

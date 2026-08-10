@@ -4,7 +4,7 @@ import { canManageProducts } from "@/lib/auth-check";
 import { notifyBackInStock } from "@/lib/stock-alerts";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  if (!canManageProducts()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await canManageProducts())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -56,7 +56,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  if (!canManageProducts()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await canManageProducts())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { error } = await supabaseServer
     .from("products")

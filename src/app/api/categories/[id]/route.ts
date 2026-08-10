@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabaseServer";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const isAdmin = cookies().get("admin")?.value === "1";
+  const isAdmin = (await cookies()).get("admin")?.value === "1";
   if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
@@ -23,7 +23,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  const isAdmin = cookies().get("admin")?.value === "1";
+  const isAdmin = (await cookies()).get("admin")?.value === "1";
   if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { error } = await supabaseServer
