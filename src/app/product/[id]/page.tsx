@@ -19,6 +19,8 @@ import { isListed, isReachable, statusOf } from "@/lib/product-status";
 import StockAlertForm from "@/components/stock-alert-form";
 import { DocumentList, LinkList, SnippetList } from "@/components/product-resources";
 import { loadProductResources } from "@/lib/product-resources.server";
+import ProductAssistant from "@/components/product-assistant";
+import { aiConfigured } from "@/lib/ai";
 
 /** Resolve by slug or by legacy UUID — old links must keep working. */
 async function findProduct(idOrSlug: string) {
@@ -243,6 +245,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           )}
         </div>
       </div>
+
+      {aiConfigured() && (
+        <ProductAssistant
+          productSlug={p.slug ?? product.id}
+          productName={product.name}
+        />
+      )}
 
       {(shownDocuments.length > 0 || links.length > 0) && (
         <div className="grid gap-10 lg:grid-cols-2">
