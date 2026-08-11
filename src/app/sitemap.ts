@@ -3,6 +3,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { absoluteUrl } from "@/lib/site";
 import { productPath } from "@/lib/slug";
 import { LEGAL_PAGES } from "@/lib/legal-content";
+import { isListed } from "@/lib/product-status";
 
 export const revalidate = 3600;
 
@@ -35,7 +36,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .order("updated_at", { ascending: false })
     .limit(5000);
 
-  const productEntries: MetadataRoute.Sitemap = (products ?? []).map((p: any) => ({
+  const productEntries: MetadataRoute.Sitemap = (products ?? [])
+    .filter((p: any) => isListed(p))
+    .map((p: any) => ({
     url: absoluteUrl(productPath(p)),
     lastModified: p.updated_at ? new Date(p.updated_at) : now,
     changeFrequency: "weekly",

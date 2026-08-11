@@ -3,9 +3,15 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { canManageProducts } from "@/lib/auth-check";
 import { listProducts } from "@/lib/products-query";
 import { saveProductResources } from "@/lib/product-resources.server";
+import { PRODUCT_STATUSES } from "@/lib/product-status";
 
-export async function GET() {
-  const { data, error } = await listProducts();
+export async function GET(req: Request) {
+  // The admin grid needs unlisted and archived rows; the storefront must not
+  // see them. Gated on the same cookie that guards every other admin read.
+  const wantsAll = new URL(req.url).searchParams.get("all") === "1";
+  const includeHidden = wantsAll && (await canManageProducts());
+
+  const { data, error } = await listProducts({ includeHidden });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -35,6 +41,7 @@ export async function POST(req: Request) {
     manufacturer: body.manufacturer?.trim() || null,
     image_url: body.imageUrl ?? null,
     datasheet_url: body.datasheetUrl ?? null,
+    status: PRODUCT_STATUSES.includes(body.status) ? body.status : "active",
   }).select("*").single();
 
   if (error) {

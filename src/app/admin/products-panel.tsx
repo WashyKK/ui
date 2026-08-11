@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import type { ColDef, ICellRendererParams } from "ag-grid-community";
-import { FileText, Package, Plus } from "lucide-react";
+import { Eye, EyeOff, FileText, Package, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Grid from "@/components/admin/grid";
 import ProductSheet, { type Category } from "./product-sheet";
+import { STATUS_META, statusOf } from "@/lib/product-status";
 
 /**
  * The Products tab.
@@ -27,7 +28,7 @@ export default function ProductsPanel() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/products", { cache: "no-store" });
+      const res = await fetch("/api/products?all=1", { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not load products");
       setRows(data.products ?? []);
@@ -51,6 +52,25 @@ export default function ProductsPanel() {
         )
       )
       .catch(() => {});
+  }, [load]);
+
+  /** One click on or off the shelf, without opening the sheet. */
+  const toggleListed = useCallback(async (row: any) => {
+    const next = statusOf(row) === "active" ? "unlisted" : "active";
+    // Optimistic: the grid should feel instant for a one-click action.
+    setRows((cur) => cur.map((r) => (r.id === row.id ? { ...r, status: next } : r)));
+    try {
+      const res = await fetch(`/api/products/${row.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Could not update");
+      setError(null);
+    } catch (e: any) {
+      setError(e.message);
+      load();
+    }
   }, [load]);
 
   const openNew = () => { setEditing(null); setSheetOpen(true); };
@@ -192,6 +212,52 @@ export default function ProductsPanel() {
       hide: true,
     },
     {
+      headerName: "Listing",
+      field: "status",
+      minWidth: 130,
+      valueGetter: (p) => STATUS_META[statusOf(p.data)].label,
+      cellRenderer: (p: ICellRendererParams) => {
+        const st = statusOf(p.data);
+        if (st === "active") {
+          return <span className="text-xs text-muted-foreground">Listed</span>;
+        }
+        return (
+          <span
+            className="text-[10px] uppercase tracking-wide border rounded-sm px-1.5 py-0.5"
+            title={STATUS_META[st].description}
+          >
+            {STATUS_META[st].short}
+          </span>
+        );
+      },
+    },
+    {
+      headerName: "",
+      colId: "quick",
+      width: 120, minWidth: 120, flex: 0,
+      sortable: false, filter: false, resizable: false,
+      pinned: "right",
+      cellRenderer: (p: ICellRendererParams) => {
+        const row = p.data;
+        if (!row) return null;
+        const st = statusOf(row);
+        if (st === "archived") {
+          return <span className="text-xs text-muted-foreground">Archived</span>;
+        }
+        const listed = st === "active";
+        return (
+          <button
+            onClick={(e) => { e.stopPropagation(); toggleListed(row); }}
+            title={listed ? "Take off the catalogue — the direct link keeps working" : "Put back on the catalogue"}
+            className="inline-flex items-center gap-1.5 h-7 px-2 rounded-sm border text-xs hover:bg-muted transition-colors my-1"
+          >
+            {listed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+            {listed ? "Unlist" : "List"}
+          </button>
+        );
+      },
+    },
+    {
       headerName: "Updated",
       field: "updated_at",
       minWidth: 120,
@@ -210,8 +276,8 @@ export default function ProductsPanel() {
         <div>
           <h2 className="text-lg font-semibold">Products</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Click any row to edit it. Drag a column edge to resize; use the header
-            menu to pin one.
+            Click a row to edit it. Unlist takes something off the catalogue
+            without touching its stock or its order history.
           </p>
         </div>
         <Button onClick={openNew} className="gap-2 shrink-0">
@@ -231,7 +297,7 @@ export default function ProductsPanel() {
         exportName="elffie-products"
         loading={loading}
         onRowClicked={(e) => e.data && openEdit(e.data)}
-        rowClass="cursor-pointer"
+        getRowClass={(p) => (statusOf(p.data) === "active" ? "cursor-pointer" : "cursor-pointer opacity-60")}
         overlayNoRowsTemplate={
           '<span class="text-sm text-muted-foreground">No products yet — create the first one.</span>'
         }

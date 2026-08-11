@@ -3,6 +3,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { canManageProducts } from "@/lib/auth-check";
 import { notifyBackInStock } from "@/lib/stock-alerts";
 import { loadProductResources, saveProductResources } from "@/lib/product-resources.server";
+import { PRODUCT_STATUSES } from "@/lib/product-status";
 import { findProductBy } from "@/lib/products-query";
 
 /** One product with its four collections — what the admin sheet needs to edit. */
@@ -33,6 +34,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (typeof body.stock === "number") update.stock = body.stock;
   if (typeof body.category === "string") update.category = body.category;
   if (body.categoryId !== undefined) update.category_id = body.categoryId || null;
+  if (body.status !== undefined && PRODUCT_STATUSES.includes(body.status)) {
+    update.status = body.status;
+  }
   if (body.sku !== undefined) update.sku = String(body.sku).trim() || null;
   if (body.mpn !== undefined) update.mpn = String(body.mpn).trim() || null;
   if (body.manufacturer !== undefined) {
@@ -56,7 +60,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     .select("*")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    // The status column arrives with product_status.sql; name the migration
+    // rather than leaking "schema cache" at someone clicking Unlist.
+    if (/'status' column|status.*schema cache/i.test(error.message)) {
+      return NextResponse.json(
+        { error: "Listing status needs supabase/product_status.sql applied first." },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   const resources = await saveProductResources(productId, body);
 
@@ -77,11 +91,33 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await canManageProducts())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { error } = await supabaseServer
-    .from("products")
-    .delete()
-    .eq("id", (await params).id);
+  const { id } = await params;
+  const { error } = await supabaseServer.from("products").delete().eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  if (!error) return NextResponse.json({ ok: true, deleted: true });
+
+  // 23503: an order references this product. That constraint is deliberate —
+  // an order records what somebody actually bought, and a catalogue edit must
+  // not be able to rewrite it. Say so, and point at the thing they can do.
+  if (error.code === "23503") {
+    const [{ count: orderCount }, { count: mpesaCount }] = await Promise.all([
+      supabaseServer.from("orders").select("id", { count: "exact", head: true }).eq("product_id", id),
+      supabaseServer.from("mpesa_orders").select("id", { count: "exact", head: true }).eq("product_id", id),
+    ]);
+    const total = (orderCount ?? 0) + (mpesaCount ?? 0);
+
+    return NextResponse.json(
+      {
+        error:
+          `This product appears on ${total || "past"} order${total === 1 ? "" : "s"}, so deleting it ` +
+          `would break that history. Archive it instead — it disappears from the store ` +
+          `but the orders keep their record.`,
+        canArchive: true,
+        orderCount: total,
+      },
+      { status: 409 }
+    );
+  }
+
+  return NextResponse.json({ error: error.message }, { status: 500 });
 }

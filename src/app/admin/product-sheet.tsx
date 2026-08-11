@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { AlertTriangle, Archive, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import {
 import type {
   ProductDocumentInput, ProductImageInput, ProductLinkInput, ProductSnippetInput,
 } from "@/lib/product-resources";
+import { PRODUCT_STATUSES, STATUS_META, statusOf, type ProductStatus } from "@/lib/product-status";
 
 type Tab = "details" | "media" | "resources";
 
@@ -71,6 +72,9 @@ export default function ProductSheet({
   const [links, setLinks] = useState<ProductLinkInput[]>([]);
   const [snippets, setSnippets] = useState<ProductSnippetInput[]>([]);
   const [loadingResources, setLoadingResources] = useState(false);
+  const [status, setStatus] = useState<ProductStatus>("active");
+  // Set when a delete is refused because orders reference this product.
+  const [mustArchive, setMustArchive] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +99,8 @@ export default function ProductSheet({
     setError(null);
     setConfirmDelete(false);
     setTab("details");
+    setStatus(statusOf(product));
+    setMustArchive(null);
 
     // Seed from what the grid already has, so the sheet is never empty while
     // the full collections load.
@@ -150,6 +156,7 @@ export default function ProductSheet({
         categoryId: categoryId || null,
         category: categories.find((c) => c.id === categoryId)?.name ?? "",
         mpn, sku, manufacturer,
+        status,
         imageUrl: primaryImage,
         datasheetUrl: primaryDoc,
         images, documents, links, snippets,
@@ -208,12 +215,38 @@ export default function ProductSheet({
       const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
+        // Refused because it appears on orders — offer the thing that works.
+        if (res.status === 409 && d.canArchive) {
+          setMustArchive(d.error);
+          setConfirmDelete(false);
+          setSaving(false);
+          return;
+        }
         throw new Error(d.error || "Delete failed");
       }
       onSaved();
       onClose();
     } catch (err: any) {
       setError(err.message);
+      setSaving(false);
+    }
+  };
+
+  const archive = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/products/${product.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "archived" }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "Could not archive");
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
       setSaving(false);
     }
   };
@@ -255,6 +288,33 @@ export default function ProductSheet({
           )}
 
           <div className={tab === "details" ? "space-y-5" : "hidden"}>
+          <div>
+            <Label>Listing</Label>
+            <div className="flex rounded-sm border overflow-hidden mt-1.5">
+              {PRODUCT_STATUSES.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setStatus(value)}
+                  className={`flex-1 px-3 py-2 text-sm transition-colors ${
+                    status === value
+                      ? "bg-foreground text-background"
+                      : "hover:bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {STATUS_META[value].label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              {STATUS_META[status].description}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Separate from stock — a listed part can be out of stock and still
+              collect back-in-stock requests.
+            </p>
+          </div>
+
           <div>
             <Label htmlFor="p-name">Name</Label>
             <Input id="p-name" value={name} onChange={(e) => setName(e.target.value)} required />
@@ -367,7 +427,26 @@ export default function ProductSheet({
         </form>
 
         <div className="border-t px-6 py-4 space-y-3 bg-muted/30">
-          {confirmDelete ? (
+          {mustArchive ? (
+            <div className="space-y-2.5">
+              <p className="flex gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                {mustArchive}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="destructive" size="sm" className="flex-1 gap-2"
+                  onClick={archive} disabled={saving}
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
+                  Archive it
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setMustArchive(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : confirmDelete ? (
             <div className="space-y-2.5">
               <p className="text-sm">
                 Delete <span className="font-medium">{product?.name}</span>? This cannot be undone.

@@ -27,21 +27,31 @@ function isMissingSchema(error: { message?: string; code?: string } | null): boo
   );
 }
 
-export async function listProducts() {
-  const withImages = await supabaseServer
-    .from("products")
-    .select(WITH_IMAGES)
-    .order("created_at", { ascending: false });
+/**
+ * The catalogue. Unlisted and archived products are excluded here — this feeds
+ * the store, the sitemap and the category counts. The admin uses
+ * listProductsForAdmin() instead, which shows everything.
+ */
+export async function listProducts(opts: { includeHidden?: boolean } = {}) {
+  const listedOnly = !opts.includeHidden;
+
+  let q = supabaseServer.from("products").select(WITH_IMAGES).order("created_at", { ascending: false });
+  if (listedOnly) q = q.eq("status", "active");
+  const withImages = await q;
 
   if (!withImages.error) return { data: withImages.data ?? [], error: null };
   if (!isMissingSchema(withImages.error)) {
     return { data: [], error: withImages.error };
   }
 
-  const plain = await supabaseServer
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
+  // Fall back progressively: the status column and the images relation can each
+  // be absent on a database that has not caught up with the code.
+  let plainQuery = supabaseServer.from("products").select("*").order("created_at", { ascending: false });
+  if (listedOnly) plainQuery = plainQuery.eq("status", "active");
+  let plain = await plainQuery;
+  if (plain.error && isMissingSchema(plain.error)) {
+    plain = await supabaseServer.from("products").select("*").order("created_at", { ascending: false });
+  }
 
   return { data: plain.data ?? [], error: plain.error };
 }

@@ -15,6 +15,7 @@ import { absoluteUrl } from "@/lib/site";
 import { getUsdToKesRate, usdToKes } from "@/lib/fx";
 import { JsonLd, breadcrumbSchema, productSchema } from "@/lib/json-ld";
 import { attributesFor } from "@/lib/attributes.server";
+import { isListed, isReachable, statusOf } from "@/lib/product-status";
 import StockAlertForm from "@/components/stock-alert-form";
 import { DocumentList, LinkList, SnippetList } from "@/components/product-resources";
 import { loadProductResources } from "@/lib/product-resources.server";
@@ -29,7 +30,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { id } = await params;
   const row = await findProduct(id);
-  if (!row) return {};
+  if (!row || !isReachable(row)) return {};
 
   const product = toProduct(row);
   const title = product.mpn ? `${product.name} — ${product.mpn}` : product.name;
@@ -41,6 +42,9 @@ export async function generateMetadata(
     title,
     description,
     alternates: { canonical: absoluteUrl(productPath({ id: row.id, slug: row.slug })) },
+    // Unlisted is reachable but deliberately not promoted, so keep it out of
+    // the index rather than letting search undo the decision.
+    ...(isListed(row) ? {} : { robots: { index: false, follow: false } }),
     openGraph: {
       title,
       description,
@@ -130,7 +134,9 @@ async function getRelated(productId: string): Promise<RelatedProduct[]> {
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const p = await findProduct(id);
-  if (!p) return notFound();
+  // Archived means retired: the link stops working. Unlisted keeps working, so
+  // a part you will still supply on request can be shared directly.
+  if (!p || !isReachable(p)) return notFound();
 
   // Old UUID links keep resolving, but send them on to the readable URL so the
   // canonical form is the one that gets shared and indexed.

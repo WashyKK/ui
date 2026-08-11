@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { getShippingRate } from "@/lib/shipping";
 import { getUsdToKesRate, usdToKes } from "@/lib/fx";
+import { isPurchasable } from "@/lib/product-status";
 import { decrementStock } from "@/lib/stock";
 import { sendOrderConfirmation } from "@/lib/email";
 
@@ -90,12 +91,17 @@ export async function priceCart(
 
     const { data: product, error } = await supabaseServer
       .from("products")
-      .select("id, name, price, stock")
+      .select("id, name, price, stock, status")
       .eq("id", productId)
       .single();
 
     if (error || !product) {
       throw new CartPricingError(`Product not found: ${productId}`, 404);
+    }
+    // An archived part can still be sitting in someone's localStorage cart from
+    // before it was retired; refuse it at pricing rather than taking the money.
+    if (!isPurchasable(product)) {
+      throw new CartPricingError(`"${product.name}" is no longer available`);
     }
     if (Number(product.stock) < quantity) {
       throw new CartPricingError(`Insufficient stock for "${product.name}"`);
