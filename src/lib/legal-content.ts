@@ -23,7 +23,7 @@ export interface LegalPage {
   sections: LegalSection[];
 }
 
-const UPDATED = "10 August 2026";
+const UPDATED = "11 August 2026";
 
 const PAGES = {
   terms: {
@@ -155,7 +155,7 @@ const PAGES = {
       {
         heading: "How long we keep it",
         body: [
-          "Order records are kept for seven years, which is what tax and warranty obligations require. Quote requests that do not become orders are deleted after two years.",
+          "Order records are kept for seven years, which is what tax and warranty obligations require. Quote requests that do not become orders are deleted after two years. Visit and search records are deleted after six months.",
         ],
       },
       {
@@ -168,6 +168,14 @@ const PAGES = {
         heading: "Cookies",
         body: [
           "We use cookies to keep you signed in, remember your cart and remember your currency. There are no advertising or analytics cookies, which is why you are not being asked to consent to any.",
+        ],
+      },
+      {
+        heading: "How we measure the site",
+        body: [
+          "We count visits and record what people search for, so we know which parts to stock. This is done without cookies and without any third-party analytics service — nothing about you is shared with anyone.",
+          "To count visitors without identifying them, we combine your IP address and browser with a secret that changes every day, and store only the resulting one-way code. It cannot be turned back into your IP address, and because the secret rotates daily the same person is a different code tomorrow — so it cannot build a picture of you over time. We keep these records for six months.",
+          "We also store search terms and how many results they returned. A search that finds nothing tells us what to stock. Where you arrived from is recorded as the site name only, never the full address.",
         ],
       },
     ],

@@ -5,6 +5,8 @@ import ProductsPanel from "./products-panel";
 import CategoriesPanel from "./categories-panel";
 import UsersPanel from "./users-panel";
 import OrdersPanel from "./orders-panel";
+import CustomersPanel from "./customers-panel";
+import InsightsPanel from "./insights-panel";
 
 interface Props {
   isAdmin: boolean;
@@ -19,7 +21,9 @@ export default function AdminTabs({ isAdmin }: Props) {
     { id: "orders", label: "Orders" },
     { id: "products", label: "Products" },
     ...(isAdmin ? [{ id: "categories", label: "Categories" }] : []),
-    ...(isAdmin ? [{ id: "users", label: "Users" }] : []),
+    ...(isAdmin ? [{ id: "users", label: "People" }] : []),
+    ...(isAdmin ? [{ id: "customers", label: "Customers" }] : []),
+    ...(isAdmin ? [{ id: "insights", label: "Insights" }] : []),
   ];
 
   return (
@@ -45,6 +49,8 @@ export default function AdminTabs({ isAdmin }: Props) {
       {active === "products" && <ProductsPanel />}
       {active === "categories" && isAdmin && <CategoriesPanel />}
       {active === "users" && isAdmin && <UsersPanel />}
+      {active === "customers" && isAdmin && <CustomersPanel />}
+      {active === "insights" && isAdmin && <InsightsPanel />}
     </div>
   );
 }

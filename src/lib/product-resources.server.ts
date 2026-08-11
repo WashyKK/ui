@@ -17,20 +17,30 @@ function isMissingSchema(error: { message?: string; code?: string } | null): boo
   );
 }
 
+/** "saved" | "skipped" (table absent) | "failed" (a real error). */
+type CollectionOutcome = "saved" | "skipped" | "failed";
+
 async function replaceCollection(
   table: string,
   productId: string,
   rows: Record<string, unknown>[]
-): Promise<void> {
+): Promise<CollectionOutcome> {
   const del = await supabaseServer.from(table).delete().eq("product_id", productId);
-  if (del.error && isMissingSchema(del.error)) return;
+  if (del.error) {
+    if (isMissingSchema(del.error)) return "skipped";
+    console.error(`Could not clear ${table} for ${productId}:`, del.error.message);
+    return "failed";
+  }
 
-  if (rows.length === 0) return;
+  if (rows.length === 0) return "saved";
 
   const ins = await supabaseServer.from(table).insert(rows);
-  if (ins.error && !isMissingSchema(ins.error)) {
+  if (ins.error) {
+    if (isMissingSchema(ins.error)) return "skipped";
     console.error(`Could not save ${table} for ${productId}:`, ins.error.message);
+    return "failed";
   }
+  return "saved";
 }
 
 const clean = (v: unknown, max = 500): string | null => {
@@ -38,6 +48,14 @@ const clean = (v: unknown, max = 500): string | null => {
   return s.length ? s.slice(0, max) : null;
 };
 
+/**
+ * Save the collections, and report what actually landed.
+ *
+ * The report matters. These tables can be absent — product_resources.sql may
+ * not have run — and swallowing that silently means an admin types out a code
+ * snippet, saves, sees no error, and loses it. Which is exactly what happened.
+ * The caller surfaces `skipped` so the loss is never invisible.
+ */
 export async function saveProductResources(
   productId: string,
   input: {
@@ -46,9 +64,16 @@ export async function saveProductResources(
     links?: ProductLinkInput[];
     snippets?: ProductSnippetInput[];
   }
-): Promise<void> {
+): Promise<{ skipped: string[]; failed: string[] }> {
+  const skipped: string[] = [];
+  const failed: string[] = [];
+  const note = (name: string, outcome: CollectionOutcome) => {
+    if (outcome === "skipped") skipped.push(name);
+    if (outcome === "failed") failed.push(name);
+  };
+
   if (Array.isArray(input.images)) {
-    await replaceCollection(
+    note("images", await replaceCollection(
       "product_images",
       productId,
       input.images
@@ -60,12 +85,13 @@ export async function saveProductResources(
           alt: clean(i.alt, 200),
           position,
         }))
+      )
     );
   }
 
   if (Array.isArray(input.documents)) {
     const allowed = new Set(DOCUMENT_KINDS.map((k) => k.id as string));
-    await replaceCollection(
+    note("documents", await replaceCollection(
       "product_documents",
       productId,
       input.documents
@@ -78,11 +104,12 @@ export async function saveProductResources(
           kind: allowed.has(String(d.kind)) ? d.kind : "other",
           position,
         }))
+      )
     );
   }
 
   if (Array.isArray(input.links)) {
-    await replaceCollection(
+    note("links", await replaceCollection(
       "product_links",
       productId,
       input.links
@@ -95,11 +122,12 @@ export async function saveProductResources(
           description: clean(l.description, 300),
           position,
         }))
+      )
     );
   }
 
   if (Array.isArray(input.snippets)) {
-    await replaceCollection(
+    note("snippets", await replaceCollection(
       "product_snippets",
       productId,
       input.snippets
@@ -114,8 +142,11 @@ export async function saveProductResources(
           description: clean(s.description, 300),
           position,
         }))
+      )
     );
   }
+
+  return { skipped, failed };
 }
 
 /** Read a product's collections. Returns empty arrays if the tables are absent. */

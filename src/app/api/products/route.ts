@@ -43,8 +43,8 @@ export async function POST(req: Request) {
 
   // Images, documents, links and snippets need the product id, so they land
   // after the insert. A failure here is logged, not fatal — the product exists.
-  await saveProductResources(data.id, body);
+  const resources = await saveProductResources(data.id, body);
 
-  return NextResponse.json({ product: data }, { status: 201 });
+  return NextResponse.json({ product: data, resources }, { status: 201 });
 }
 

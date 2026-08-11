@@ -58,7 +58,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  await saveProductResources(productId, body);
+  const resources = await saveProductResources(productId, body);
 
   let notified = 0;
   const wasOutOfStock = Number(before?.stock ?? 0) <= 0;
@@ -71,7 +71,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
   }
 
-  return NextResponse.json({ product: data, notified });
+  return NextResponse.json({ product: data, notified, resources });
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {

@@ -166,6 +166,24 @@ export default function ProductSheet({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Save failed (${res.status})`);
 
+      // Never let a collection vanish quietly. If a table is missing, the
+      // product still saved but the links/snippets did not — say so rather
+      // than closing the sheet on a success that half happened.
+      const skipped: string[] = data.resources?.skipped ?? [];
+      const failed: string[] = data.resources?.failed ?? [];
+      if (skipped.length || failed.length) {
+        setError(
+          skipped.length
+            ? `Product saved, but ${skipped.join(" and ")} were not stored — ` +
+              `supabase/product_resources.sql has not been applied yet. ` +
+              `Run it, then save again; your input is still on screen.`
+            : `Product saved, but ${failed.join(" and ")} could not be stored.`
+        );
+        setSaving(false);
+        onSaved();
+        return;
+      }
+
       // The API reports how many people were waiting on this part.
       if (data.notified > 0) {
         window.alert(
