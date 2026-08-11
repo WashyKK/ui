@@ -4,11 +4,10 @@ import { supabaseServer } from "@/lib/supabaseServer";
 /**
  * The site had no footer at all.
  *
- * That is not only a design gap: with `/` redirecting to /store and /store
- * fetching its catalogue client-side, there was not one static HTML link to any
- * product anywhere on the domain. A crawler arriving at the homepage found
- * nothing to follow. The category links below are the first crawlable path into
- * the catalogue.
+ * That is not only a design gap: the catalogue was rendered on the client, so
+ * there was not one static HTML link to any product anywhere on the domain. A
+ * crawler arriving at the homepage found nothing to follow. These category
+ * links are a crawlable path into the catalogue.
  */
 async function getCategories(): Promise<string[]> {
   const { data } = await supabaseServer
@@ -23,7 +22,7 @@ const COLUMNS = [
   {
     heading: "Shop",
     links: [
-      { href: "/store", label: "All products" },
+      { href: "/", label: "All products" },
       { href: "/account/orders", label: "Order history" },
       { href: "/faq", label: "Shipping & delivery" },
     ],
@@ -75,7 +74,7 @@ export default async function SiteFooter() {
                 {categories.map((name) => (
                   <li key={name}>
                     <Link
-                      href={`/store?category=${encodeURIComponent(name)}`}
+                      href={`/?category=${encodeURIComponent(name)}`}
                       className="text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {name}

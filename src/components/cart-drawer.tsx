@@ -46,7 +46,7 @@ export default function CartDrawer() {
               Add something from the catalogue to get started.
             </p>
             <Button variant="outline" onClick={closeCart} asChild>
-              <Link href="/store">Browse the catalogue</Link>
+              <Link href="/">Browse the catalogue</Link>
             </Button>
           </div>
         ) : (

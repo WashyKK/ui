@@ -20,7 +20,7 @@ export default function CancelPage() {
         <div className="h-px bg-border" />
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href="/store"
+            href="/"
             className="px-5 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90 transition"
           >
             Back to Store

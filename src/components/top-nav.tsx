@@ -14,7 +14,7 @@ import { useCurrency, type Currency } from "@/context/currency";
 const CURRENCIES: Currency[] = ["USD", "KES", "EUR"];
 
 const NAV_LINKS = [
-  { href: "/store", label: "Catalogue" },
+  { href: "/", label: "Catalogue" },
   { href: "/contact", label: "Request a quote" },
   { href: "/faq", label: "Support" },
 ];
@@ -78,7 +78,7 @@ export default function TopNav({ initialIsAdmin = false, initialIsManager = fals
               <Menu className="h-5 w-5" />
             </button>
 
-            <Link href="/store" className="flex items-center gap-2 shrink-0">
+            <Link href="/" className="flex items-center gap-2 shrink-0">
               <Image src="/logo.svg" alt="" width={24} height={24} />
               <span className="display-headline text-lg">Elffie</span>
             </Link>

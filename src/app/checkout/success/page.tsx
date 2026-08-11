@@ -80,7 +80,7 @@ export default async function SuccessPage({
         <div className="h-px bg-border" />
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href="/store"
+            href="/"
             className="px-5 py-2 rounded-sm bg-foreground text-background text-sm hover:opacity-90 transition-opacity"
           >
             Back to the catalogue

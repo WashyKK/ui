@@ -35,8 +35,8 @@ function StoreInner({ initialProducts, categoryTree, facets, attributeIndex }: S
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [search, setSearch] = React.useState("");
-  // The footer links here as /store?category=…, which is the only crawlable
-  // path into the catalogue.
+  // The footer links here as /?category=…, which is the crawlable path into
+  // the catalogue.
   const [activeCategory, setActiveCategory] = React.useState(
     searchParams.get("category") ?? "all"
   );
@@ -328,7 +328,7 @@ function StoreInner({ initialProducts, categoryTree, facets, attributeIndex }: S
  * useSearchParams opts the page into client-side rendering, so it must sit
  * inside a Suspense boundary or the whole route de-opts at build time.
  */
-export default function StoreClient(props: StoreProps) {
+export default function Catalogue(props: StoreProps) {
   return (
     <React.Suspense fallback={<div className="py-24" />}>
       <StoreInner {...props} />

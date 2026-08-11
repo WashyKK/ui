@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 export default function HeroCTAs() {
   const pathname = usePathname();
-  const onStore = pathname?.startsWith("/store");
+  const onStore = pathname === "/";
   return (
     <div className="mt-6 flex justify-center gap-3">
       <Link
@@ -15,7 +15,7 @@ export default function HeroCTAs() {
         Talk to Sales
       </Link>
       <Link
-        href="/store"
+        href="/"
         className={
           onStore
             ? "px-5 py-2 rounded-lg bg-accent text-white hover:opacity-90 active:opacity-80 transition"

@@ -279,7 +279,7 @@ export default function OrderView({ orderNumber }: { orderNumber: string }) {
         and quote <strong className="text-foreground">{order.orderNumber}</strong>.
       </p>
 
-      <Button variant="outline" asChild><Link href="/store">Back to the catalogue</Link></Button>
+      <Button variant="outline" asChild><Link href="/">Back to the catalogue</Link></Button>
     </div>
   );
 }

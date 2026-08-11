@@ -150,7 +150,7 @@ export default function OrderHistoryPage() {
           <ShoppingBag className="h-12 w-12 text-muted-foreground opacity-20 mx-auto" />
           <p className="font-medium">No orders yet</p>
           <p className="text-sm text-muted-foreground">Your completed orders will appear here.</p>
-          <Link href="/store">
+          <Link href="/">
             <Button variant="outline" className="mt-2">Browse Store</Button>
           </Link>
         </div>

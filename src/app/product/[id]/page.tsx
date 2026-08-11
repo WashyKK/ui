@@ -168,20 +168,20 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       <JsonLd data={productSchema(product, kesPrice)} />
       <JsonLd
         data={breadcrumbSchema([
-          { name: "Catalogue", path: "/store" },
+          { name: "Catalogue", path: "/" },
           ...(product.category
-            ? [{ name: product.category, path: `/store?category=${encodeURIComponent(product.category)}` }]
+            ? [{ name: product.category, path: `/?category=${encodeURIComponent(product.category)}` }]
             : []),
           { name: product.name, path: productPath({ id: product.id, slug: p.slug }) },
         ])}
       />
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/store" className="hover:text-foreground transition-colors">Catalogue</Link>
+        <Link href="/" className="hover:text-foreground transition-colors">Catalogue</Link>
         {product.category && (
           <>
             <ChevronRight className="h-3.5 w-3.5 shrink-0" />
             <Link
-              href={`/store?category=${encodeURIComponent(product.category)}`}
+              href={`/?category=${encodeURIComponent(product.category)}`}
               className="hover:text-foreground transition-colors"
             >
               {product.category}

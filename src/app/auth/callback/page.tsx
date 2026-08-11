@@ -48,7 +48,7 @@ function CallbackInner() {
           setMessage("Access denied — this Google account is not the admin.");
           setTimeout(() => router.push("/admin/login?error=not_admin"), 2500);
         } else {
-          router.push("/store");
+          router.push("/");
         }
       }
     });
