@@ -1,0 +1,33 @@
+[
+  {
+    "name": "Arduino Uno R3",
+    "mpn": "A000066",
+    "manufacturer": "Arduino",
+    "sku": "MCU-UNO-R3",
+    "priceKes": 2600,
+    "stock": 12,
+    "category": "Microcontrollers > Atmega",
+    "description": "ATmega328P development board. 14 digital I/O, 6 analog in, USB-B programming.",
+    "attributes": { "supply_voltage": "5" },
+    "links": [
+      { "title": "Official docs", "url": "https://docs.arduino.cc/hardware/uno-rev3" }
+    ],
+    "snippets": [
+      {
+        "title": "Blink",
+        "language": "arduino",
+        "code": "void setup() {\n  pinMode(LED_BUILTIN, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(LED_BUILTIN, HIGH);\n  delay(1000);\n  digitalWrite(LED_BUILTIN, LOW);\n  delay(1000);\n}"
+      }
+    ]
+  },
+  {
+    "name": "NEMA 17 Stepper Motor",
+    "mpn": "17HS4401",
+    "manufacturer": "Usongshine",
+    "priceKes": 1600,
+    "stock": 25,
+    "category": "Motors > DC Motors > Stepper Motors",
+    "description": "1.8 degree step angle, 1.7 A per phase, 40 N.cm holding torque.",
+    "datasheetUrl": "https://example.com/17hs4401.pdf"
+  }
+]

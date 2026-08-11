@@ -9,7 +9,7 @@
  * running it twice updates rather than duplicating — which matters because the
  * usual reason to run it again is that a price or a stock figure was wrong.
  *
- * Categories are given as a path ("Motors > DC > Stepper") and the missing
+ * Categories are given as a path ("Motors > DC Motors > Stepper Motors") and the missing
  * nodes are created, so the tree comes out of the data rather than needing to
  * be built by hand first.
  *
@@ -23,7 +23,7 @@
  *     "price": 12.50,              // USD, as products.price is USD
  *     "priceKes": 1600,            // or give KES and it converts
  *     "stock": 25,
- *     "category": "Motors > DC > Stepper",
+ *     "category": "Motors > DC Motors > Stepper Motors",
  *     "description": "Markdown is fine here.",
  *     "imageUrl": "https://…",
  *     "datasheetUrl": "https://…",
@@ -62,12 +62,36 @@ if (!Array.isArray(items)) {
   process.exit(1);
 }
 
-/** Resolve "Motors > DC > Stepper" to a category id, creating what is missing. */
+/**
+ * Resolve "Motors > DC Motors > Stepper Motors" to a category id, creating only what is
+ * genuinely missing.
+ *
+ * The lookup is deliberately loose, because a path written out by hand rarely
+ * matches the tree exactly — the live tree has Microcontrollers sitting under
+ * "Microcontrollers & Microcomputers", and nobody writing an inventory list is
+ * going to type that. So a segment is matched first as a child of where we are,
+ * then by name anywhere in the tree, and only created if the name does not
+ * exist at all. Getting this wrong does not fail loudly; it quietly grows a
+ * second "Motors" beside the first and splits the catalogue in half.
+ */
 const categoryCache = new Map();
+let allCategories = null;
+
+async function loadCategories() {
+  if (allCategories) return allCategories;
+  const { data, error } = await db.from("categories").select("id, name, parent_id");
+  if (error) throw new Error(`reading categories: ${error.message}`);
+  allCategories = data ?? [];
+  return allCategories;
+}
+
 async function resolveCategory(pathString) {
   if (!pathString) return null;
   const parts = String(pathString).split(/[>›\/]/).map((s) => s.trim()).filter(Boolean);
   if (!parts.length) return null;
+
+  const rows = await loadCategories();
+  const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 
   let parentId = null;
   let key = "";
@@ -75,9 +99,21 @@ async function resolveCategory(pathString) {
     key = key ? `${key} > ${name}` : name;
     if (categoryCache.has(key)) { parentId = categoryCache.get(key); continue; }
 
-    let query = db.from("categories").select("id").ilike("name", name);
-    query = parentId ? query.eq("parent_id", parentId) : query.is("parent_id", null);
-    const { data: found } = await query.maybeSingle();
+    // A child of where we are, which is what the path literally asked for.
+    let found = rows.find((c) => same(c.name, name) && c.parent_id === parentId);
+
+    // Otherwise the same name anywhere — but only if it is unambiguous. Two
+    // categories called "Sensors" in different branches is a question for a
+    // person, not something to guess at.
+    if (!found) {
+      const byName = rows.filter((c) => same(c.name, name));
+      if (byName.length === 1) {
+        found = byName[0];
+        console.log(`      "${name}" matched an existing category elsewhere in the tree`);
+      } else if (byName.length > 1) {
+        throw new Error(`category "${name}" is ambiguous — ${byName.length} of them exist, give a fuller path`);
+      }
+    }
 
     if (found) {
       parentId = found.id;
@@ -90,6 +126,7 @@ async function resolveCategory(pathString) {
       const { data: made, error } = await db.from("categories").insert(insert).select("id").single();
       if (error) throw new Error(`category "${key}": ${error.message}`);
       console.log(`      created category "${key}"`);
+      rows.push({ id: made.id, name, parent_id: parentId });
       parentId = made.id;
     }
     categoryCache.set(key, parentId);
