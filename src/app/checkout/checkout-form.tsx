@@ -385,7 +385,7 @@ export default function CheckoutForm({ paystackEnabled }: { paystackEnabled: boo
               <div key={product.id} className="flex gap-3 items-start">
                 <div className="relative h-12 w-12 rounded-md overflow-hidden shrink-0 border bg-muted">
                   {product.imageUrl && (
-                    <Image src={product.imageUrl} alt="" fill className="object-cover" sizes="48px" />
+                    <Image src={product.imageUrl} alt="" fill className="object-contain p-1" sizes="48px" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

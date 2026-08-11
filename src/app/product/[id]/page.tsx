@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronRight, Download, FileText } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { supabaseServer } from "@/lib/supabaseServer";
 import ProductActions from "@/components/product-actions";
 import ProductGallery from "@/components/product-gallery";
@@ -16,6 +16,8 @@ import { getUsdToKesRate, usdToKes } from "@/lib/fx";
 import { JsonLd, breadcrumbSchema, productSchema } from "@/lib/json-ld";
 import { attributesFor } from "@/lib/attributes";
 import StockAlertForm from "@/components/stock-alert-form";
+import { DocumentList, LinkList, SnippetList } from "@/components/product-resources";
+import { loadProductResources } from "@/lib/product-resources";
 
 /** Resolve by slug or by legacy UUID — old links must keep working. */
 async function findProduct(idOrSlug: string) {
@@ -141,6 +143,15 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
   // Relations live in a table that may not exist yet on an un-migrated database.
   const related = await getRelated(product.id).catch(() => [] as RelatedProduct[]);
+  const { documents, links, snippets } = await loadProductResources(product.id);
+
+  // The single datasheet_url is the fallback when product_documents has not
+  // been populated (or migrated) yet, so a product never loses its PDF.
+  const shownDocuments = documents.length
+    ? documents
+    : product.datasheetUrl
+      ? [{ url: product.datasheetUrl, title: "Datasheet", kind: "datasheet" }]
+      : [];
 
   const kesPrice = usdToKes(product.price, getUsdToKesRate());
 
@@ -197,36 +208,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <StockAlertForm productId={product.id} />
           )}
 
-          {product.datasheetUrl && (
-            <div className="rounded-sm border p-4 flex items-center gap-4">
-              <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Datasheet</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Manufacturer specifications — PDF
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href={product.datasheetUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-sm border text-sm hover:bg-muted transition-colors"
-                >
-                  View
-                </a>
-                <a
-                  href={product.datasheetUrl}
-                  download
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-foreground text-background text-sm hover:opacity-90 transition-opacity"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download
-                </a>
-              </div>
-            </div>
-          )}
-
           {specs.length > 0 && (
             <div>
               <h2 className="label-micro text-muted-foreground mb-3">Specification</h2>
@@ -249,6 +230,15 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           )}
         </div>
       </div>
+
+      {(shownDocuments.length > 0 || links.length > 0) && (
+        <div className="grid gap-10 lg:grid-cols-2">
+          <DocumentList documents={shownDocuments} />
+          <LinkList links={links} />
+        </div>
+      )}
+
+      <SnippetList snippets={snippets} />
 
       <RelatedProducts related={related} />
     </div>

@@ -47,6 +47,9 @@ function ProductImage({
   alt: string;
   className?: string;
 }) {
+  // object-contain, not cover: these are parts, and their outline carries
+  // information. A portrait board cropped into a landscape tile loses its
+  // connectors — exactly the thing the buyer is looking at.
   const [err, setErr] = React.useState(false);
   if (!src || err) {
     return (
@@ -63,7 +66,7 @@ function ProductImage({
       alt={alt}
       fill
       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-      className="object-cover"
+      className="object-contain p-3"
       onError={() => setErr(true)}
     />
   );

@@ -1,12 +1,25 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { AlertTriangle, FileText, Loader2, Trash2, Upload, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import ImageUpload, { uploadFile } from "@/components/admin/image-upload";
+import {
+  DocumentsEditor, ImagesEditor, LinksEditor, SnippetsEditor,
+} from "@/components/admin/resource-editors";
+import type {
+  ProductDocumentInput, ProductImageInput, ProductLinkInput, ProductSnippetInput,
+} from "@/lib/product-resources";
+
+type Tab = "details" | "media" | "resources";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "details", label: "Details" },
+  { id: "media", label: "Images & documents" },
+  { id: "resources", label: "Links & code" },
+];
 
 export interface Category { id: string; name: string }
 
@@ -47,14 +60,16 @@ export default function ProductSheet({
   const [mpn, setMpn] = useState("");
   const [sku, setSku] = useState("");
   const [manufacturer, setManufacturer] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [datasheetFile, setDatasheetFile] = useState<File | null>(null);
-  const [existingDatasheet, setExistingDatasheet] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("details");
+  const [images, setImages] = useState<ProductImageInput[]>([]);
+  const [documents, setDocuments] = useState<ProductDocumentInput[]>([]);
+  const [links, setLinks] = useState<ProductLinkInput[]>([]);
+  const [snippets, setSnippets] = useState<ProductSnippetInput[]>([]);
+  const [loadingResources, setLoadingResources] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const datasheetRef = useRef<HTMLInputElement>(null);
 
   // Reset from the row every time the sheet opens, so a previous edit never
   // leaks into the next one.
@@ -72,12 +87,42 @@ export default function ProductSheet({
     setMpn(product?.mpn ?? "");
     setSku(product?.sku ?? "");
     setManufacturer(product?.manufacturer ?? "");
-    setImageUrl(product?.image_url ?? "");
-    setExistingDatasheet(product?.datasheet_url ?? null);
-    setDatasheetFile(null);
     setError(null);
     setConfirmDelete(false);
-    if (datasheetRef.current) datasheetRef.current.value = "";
+    setTab("details");
+
+    // Seed from what the grid already has, so the sheet is never empty while
+    // the full collections load.
+    const seeded: ProductImageInput[] = [];
+    if (product?.image_url) seeded.push({ url: product.image_url, alt: product.name ?? "" });
+    for (const img of product?.product_images ?? []) {
+      if (img?.url && img.url !== product?.image_url) seeded.push({ url: img.url, alt: img.alt ?? "" });
+    }
+    setImages(seeded);
+    setDocuments(
+      product?.datasheet_url ? [{ url: product.datasheet_url, title: "Datasheet", kind: "datasheet" }] : []
+    );
+    setLinks([]);
+    setSnippets([]);
+
+    if (!product?.id) return;
+    let cancelled = false;
+    setLoadingResources(true);
+    fetch(`/api/products/${product.id}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => {
+        if (cancelled) return;
+        if (d.documents?.length) {
+          setDocuments(d.documents.map((x: any) => ({ url: x.url, title: x.title, kind: x.kind })));
+        }
+        setLinks((d.links ?? []).map((x: any) => ({ url: x.url, title: x.title, description: x.description })));
+        setSnippets((d.snippets ?? []).map((x: any) => ({
+          title: x.title, language: x.language, code: x.code, description: x.description,
+        })));
+      })
+      .catch(() => {})
+      .finally(() => !cancelled && setLoadingResources(false));
+    return () => { cancelled = true; };
   }, [open, product, categories]);
 
   const submit = async (e: React.FormEvent) => {
@@ -86,10 +131,11 @@ export default function ProductSheet({
     setError(null);
 
     try {
-      let datasheetUrl = existingDatasheet ?? undefined;
-      if (datasheetFile) {
-        datasheetUrl = await uploadFile("/api/products/upload-datasheet", datasheetFile);
-      }
+      // image_url and datasheet_url stay as the primary of each collection, so
+      // the grid, the cart and every existing reader keep working unchanged.
+      const primaryImage = images[0]?.url ?? "";
+      const primaryDoc =
+        documents.find((d) => d.kind === "datasheet")?.url ?? documents[0]?.url ?? "";
 
       const body = {
         name: name.trim(),
@@ -99,8 +145,9 @@ export default function ProductSheet({
         categoryId: categoryId || null,
         category: categories.find((c) => c.id === categoryId)?.name ?? "",
         mpn, sku, manufacturer,
-        imageUrl,
-        datasheetUrl,
+        imageUrl: primaryImage,
+        datasheetUrl: primaryDoc,
+        images, documents, links, snippets,
       };
 
       const res = await fetch(
@@ -160,7 +207,31 @@ export default function ProductSheet({
           )}
         </SheetHeader>
 
-        <form onSubmit={submit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <div className="flex border-b px-6 gap-1">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`px-3 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
+                tab === t.id
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={submit} className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          {loadingResources && (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading images, documents and code…
+            </p>
+          )}
+
+          <div className={tab === "details" ? "space-y-5" : "hidden"}>
           <div>
             <Label htmlFor="p-name">Name</Label>
             <Input id="p-name" value={name} onChange={(e) => setName(e.target.value)} required />
@@ -245,58 +316,16 @@ export default function ProductSheet({
             </p>
           </div>
 
-          <div>
-            <Label>Product image</Label>
-            <div className="mt-1.5">
-              <ImageUpload value={imageUrl} onChange={setImageUrl} />
-            </div>
           </div>
 
-          <div>
-            <Label htmlFor="p-datasheet">Datasheet (PDF)</Label>
-            <div className="mt-1.5 space-y-1.5">
-              <label
-                htmlFor="p-datasheet"
-                className="flex items-center gap-2 cursor-pointer w-fit px-3 py-2 rounded-sm border border-dashed border-input hover:border-graphite transition-colors text-sm text-muted-foreground"
-              >
-                <Upload className="h-4 w-4" />
-                {datasheetFile
-                  ? datasheetFile.name
-                  : existingDatasheet
-                    ? "Replace PDF…"
-                    : "Choose PDF…"}
-              </label>
-              <input
-                ref={datasheetRef}
-                id="p-datasheet"
-                type="file"
-                accept="application/pdf"
-                className="sr-only"
-                onChange={(e) => setDatasheetFile(e.target.files?.[0] ?? null)}
-              />
+          <div className={tab === "media" ? "space-y-8" : "hidden"}>
+            <ImagesEditor images={images} onChange={setImages} />
+            <DocumentsEditor documents={documents} onChange={setDocuments} />
+          </div>
 
-              {datasheetFile ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDatasheetFile(null);
-                    if (datasheetRef.current) datasheetRef.current.value = "";
-                  }}
-                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
-                >
-                  <X className="h-3 w-3" /> Cancel replacement
-                </button>
-              ) : existingDatasheet ? (
-                <a
-                  href={existingDatasheet}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs underline underline-offset-2 hover:text-foreground w-fit"
-                >
-                  <FileText className="h-3 w-3" /> View current datasheet
-                </a>
-              ) : null}
-            </div>
+          <div className={tab === "resources" ? "space-y-8" : "hidden"}>
+            <LinksEditor links={links} onChange={setLinks} />
+            <SnippetsEditor snippets={snippets} onChange={setSnippets} />
           </div>
 
           {error && (

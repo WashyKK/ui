@@ -2,6 +2,22 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { canManageProducts } from "@/lib/auth-check";
 import { notifyBackInStock } from "@/lib/stock-alerts";
+import { loadProductResources, saveProductResources } from "@/lib/product-resources";
+import { findProductBy } from "@/lib/products-query";
+
+/** One product with its four collections — what the admin sheet needs to edit. */
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await canManageProducts())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const product = await findProductBy("id", id);
+  if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const resources = await loadProductResources(id);
+  return NextResponse.json({ product, ...resources });
+}
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await canManageProducts())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -41,6 +57,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await saveProductResources(productId, body);
 
   let notified = 0;
   const wasOutOfStock = Number(before?.stock ?? 0) <= 0;

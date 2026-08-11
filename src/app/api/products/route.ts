@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { canManageProducts } from "@/lib/auth-check";
 import { listProducts } from "@/lib/products-query";
+import { saveProductResources } from "@/lib/product-resources";
 
 export async function GET() {
   const { data, error } = await listProducts();
@@ -39,6 +40,10 @@ export async function POST(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Images, documents, links and snippets need the product id, so they land
+  // after the insert. A failure here is logged, not fatal — the product exists.
+  await saveProductResources(data.id, body);
 
   return NextResponse.json({ product: data }, { status: 201 });
 }

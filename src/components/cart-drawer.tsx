@@ -56,7 +56,7 @@ export default function CartDrawer() {
                 <div key={product.id} className="flex gap-3 items-start">
                   <div className="relative h-16 w-16 rounded-lg overflow-hidden shrink-0 bg-muted border">
                     {product.imageUrl ? (
-                      <Image src={product.imageUrl} alt="" fill className="object-cover" sizes="64px" />
+                      <Image src={product.imageUrl} alt="" fill className="object-contain p-1" sizes="64px" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
                         No image
