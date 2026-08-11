@@ -7,6 +7,7 @@ import { Minus, Plus, X, ShoppingCart, ArrowRight } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/cart";
+import CartAssistant from "@/components/cart-assistant";
 import { useCurrency } from "@/context/currency";
 
 /**
@@ -17,7 +18,7 @@ import { useCurrency } from "@/context/currency";
  * someone saw before committing to a six-figure shilling order. Collecting an
  * address and payment now happens on /checkout, where there is room for it.
  */
-export default function CartDrawer() {
+export default function CartDrawer({ aiEnabled = false }: { aiEnabled?: boolean }) {
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice, isOpen, closeCart } = useCart();
   const { format } = useCurrency();
 
@@ -104,6 +105,10 @@ export default function CartDrawer() {
                 </div>
               ))}
             </div>
+
+            {/* Sits above the total, not below the checkout button: someone
+                with a question has it before they commit, not after. */}
+            {aiEnabled && <CartAssistant />}
 
             <div className="border-t px-5 py-4 space-y-3 bg-muted/30">
               <div className="flex justify-between font-semibold">

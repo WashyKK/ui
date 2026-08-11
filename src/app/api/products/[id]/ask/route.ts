@@ -5,7 +5,7 @@ import { attributesFor } from "@/lib/attributes.server";
 import { loadProductResources } from "@/lib/product-resources.server";
 import { aiConfigured, streamChat, systemPrompt, type ChatMessage } from "@/lib/ai";
 import { isUuid } from "@/lib/slug";
-import { isReachable } from "@/lib/product-status";
+import { isReachable, isListed } from "@/lib/product-status";
 import { effectivePrice } from "@/lib/pricing";
 import { getUsdToKesRate, usdToKes } from "@/lib/fx";
 import { visitorHash, isBot } from "@/lib/analytics";
@@ -174,7 +174,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .then(undefined, () => undefined);
 
   try {
-    const stream = await streamChat(systemPrompt(await buildContext(product)), recent);
+    // The cart rule is only sent when the product can actually be bought — an
+    // out-of-stock or unlisted part should not be offered, and an instruction
+    // nobody can act on is 40 tokens paid on every question for nothing.
+    const canAddToCart = Number(product.stock) > 0 && isListed(product);
+    const stream = await streamChat(
+      systemPrompt(await buildContext(product), { canAddToCart }),
+      recent
+    );
     return new Response(stream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",

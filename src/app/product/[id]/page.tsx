@@ -13,6 +13,7 @@ import { isUuid, productPath } from "@/lib/slug";
 import { findProductBy } from "@/lib/products-query";
 import { absoluteUrl } from "@/lib/site";
 import { getUsdToKesRate, usdToKes } from "@/lib/fx";
+import { effectivePrice } from "@/lib/pricing";
 import { JsonLd, breadcrumbSchema, productSchema } from "@/lib/json-ld";
 import { attributesFor } from "@/lib/attributes.server";
 import { isListed, isReachable, statusOf } from "@/lib/product-status";
@@ -249,7 +250,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       {aiConfigured() && (
         <ProductAssistant
           productSlug={p.slug ?? product.id}
-          productName={product.name}
+          product={product}
         />
       )}
 

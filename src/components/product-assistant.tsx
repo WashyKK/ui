@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Loader2, Sparkles } from "lucide-react";
+import { ArrowUp, Check, Loader2, Sparkles } from "lucide-react";
+import { useCart } from "@/context/cart";
+import { useCurrency } from "@/context/currency";
+import type { Product } from "@/components/types";
+import {
+  answerLocally,
+  extractCartAction,
+  stripPartialSentinel,
+} from "@/lib/assistant-intents";
 
 interface Turn {
   role: "user" | "assistant";
@@ -17,6 +25,9 @@ interface Turn {
  * someone wiring 24 V into a 5 V board. The disclaimer under the box says the
  * same thing to the customer, because a confident tone is exactly what makes a
  * wrong answer dangerous.
+ *
+ * Stock, price and "add two to my cart" never reach the model at all — see
+ * lib/assistant-intents. Those are answered here, instantly and for nothing.
  */
 const STARTERS = [
   "What is this used for?",
@@ -26,17 +37,22 @@ const STARTERS = [
 
 export default function ProductAssistant({
   productSlug,
-  productName,
+  product,
 }: {
   productSlug: string;
-  productName: string;
+  product: Product;
 }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [added, setAdded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const latestRef = useRef<HTMLDivElement>(null);
+  const { addToCart, openCart } = useCart();
+  // The same formatter the price on this page uses, so the assistant can never
+  // quote a different number or a different currency than what is on screen.
+  const { format } = useCurrency();
 
   // Bring the top of the newest exchange into view — not the bottom of the box.
   // An answer is usually taller than the box on a phone, so scrolling to the
@@ -51,15 +67,46 @@ export default function ProductAssistant({
     container.scrollTo({ top: latest.offsetTop - container.offsetTop, behavior: "smooth" });
   }, [turns.length]);
 
+  const doAdd = (quantity: number) => {
+    addToCart(product, quantity);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 4000);
+  };
+
   const ask = async (question: string) => {
     const text = question.trim();
     if (!text || streaming) return;
 
+    setInput("");
+    setError(null);
+
+    // Cheapest path: no request at all. Stock, price and add-to-cart are all
+    // answerable from what this component already holds.
+    const local = answerLocally(
+      text,
+      {
+        id: product.id,
+        name: product.name,
+        stock: product.stock,
+        priceUsd: product.price,
+        onSale: product.onSale,
+        percentOff: product.percentOff ?? undefined,
+      },
+      format
+    );
+    if (local) {
+      setTurns((prev) => [
+        ...prev,
+        { role: "user", content: text },
+        { role: "assistant", content: local.text },
+      ]);
+      if (local.kind === "add") doAdd(local.quantity);
+      return;
+    }
+
     const history: Turn[] = [...turns, { role: "user", content: text }];
     setTurns([...history, { role: "assistant", content: "" }]);
-    setInput("");
     setStreaming(true);
-    setError(null);
 
     try {
       const res = await fetch(`/api/products/${productSlug}/ask`, {
@@ -82,9 +129,22 @@ export default function ProductAssistant({
         const { done, value } = await reader.read();
         if (done) break;
         answer += decoder.decode(value, { stream: true });
-        setTurns([...history, { role: "assistant", content: answer }]);
+        // Hide a half-arrived [[cart:add:2]] rather than letting the brackets
+        // flicker across the screen mid-sentence.
+        setTurns([...history, { role: "assistant", content: stripPartialSentinel(answer) }]);
       }
-      if (!answer.trim()) throw new Error("No answer came back — try rephrasing.");
+
+      const action = extractCartAction(answer);
+      if (action) {
+        // Clamped against real stock here, not in the prompt. The model is
+        // asked not to exceed it, but a request to add 500 of something we
+        // have 3 of has to fail closed whatever the model says.
+        const qty = Math.min(action.quantity, Math.max(0, product.stock));
+        setTurns([...history, { role: "assistant", content: action.clean }]);
+        if (qty > 0) doAdd(qty);
+      } else if (!answer.trim()) {
+        throw new Error("No answer came back — try rephrasing.");
+      }
     } catch (err: any) {
       setError(err.message);
       setTurns(history);
@@ -98,6 +158,14 @@ export default function ProductAssistant({
       <div className="flex items-center gap-2 px-4 py-3 border-b bg-muted/40">
         <Sparkles className="h-4 w-4 text-muted-foreground" />
         <h2 className="text-sm font-medium">Ask about this part</h2>
+        {added && (
+          <button
+            onClick={openCart}
+            className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Check className="h-3.5 w-3.5" /> In your cart — view
+          </button>
+        )}
       </div>
 
       {turns.length > 0 && (
@@ -150,8 +218,8 @@ export default function ProductAssistant({
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={`Ask anything about the ${productName}`}
-            aria-label={`Ask about the ${productName}`}
+            placeholder={'Ask, or say "add 2 to my cart"'}
+            aria-label={`Ask about the ${product.name}`}
             maxLength={1000}
             className="flex-1 h-10 rounded-sm border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
