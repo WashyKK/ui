@@ -11,7 +11,8 @@ import { useCart } from "@/context/cart";
 import { useUser } from "@/context/user";
 import { useCurrency, type Currency } from "@/context/currency";
 
-const CURRENCIES: Currency[] = ["USD", "KES", "EUR"];
+// Shillings first: it is the default and what most of this shop's customers pay in.
+const CURRENCIES: Currency[] = ["KES", "USD", "EUR"];
 
 const NAV_LINKS = [
   { href: "/", label: "Catalogue" },

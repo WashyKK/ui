@@ -33,7 +33,23 @@ export function getPublicUsdToKesRate(): number {
   );
 }
 
-/** KES major units for a USD amount, rounded up to the shilling. */
+/**
+ * KES major units for a USD amount, to the nearest shilling.
+ *
+ * This was `ceil`, which never undercharges — but the shop sets its prices in
+ * shillings and the USD column only holds two decimals, so rounding up pushed
+ * seven of fourteen products a shilling above the price the owner actually set:
+ * a KSh 1,400 board quoted and billed at KSh 1,401. Rounding to nearest gets
+ * twelve of them exactly right.
+ *
+ * The cost is that an order total can come out up to half a shilling under the
+ * exact conversion — this is applied to the total, not per line — which is not
+ * a sum worth misquoting every price to protect.
+ *
+ * The two that are still off (both KSh 600) are unrepresentable: 600/130 is
+ * 4.6153…, and neither 4.61 nor 4.62 lands on 600 at any rounding. Fixing those
+ * properly means storing the price in KES rather than deriving it from USD.
+ */
 export function usdToKes(usd: number, rate = getUsdToKesRate()): number {
-  return Math.ceil(usd * rate);
+  return Math.round(usd * rate);
 }

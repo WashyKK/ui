@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { getPublicUsdToKesRate } from "@/lib/fx";
+import { getPublicUsdToKesRate, usdToKes } from "@/lib/fx";
 
 export type Currency = "USD" | "KES" | "EUR";
 
@@ -20,14 +20,28 @@ interface CurrencyContextValue {
   format: (usdAmount: number) => string;
 }
 
+/**
+ * KES is the default, not USD.
+ *
+ * The shop is in Nairobi, quotes in shillings, and takes M-Pesa — and the
+ * structured data has always declared priceCurrency KES, so the visible price
+ * was disagreeing with what search engines were told. Prices are still *held*
+ * in USD; this is only what a visitor sees before they touch the switcher.
+ *
+ * Only an explicit choice is written to localStorage, so anyone who never
+ * picked a currency gets shillings from now on. Someone who deliberately chose
+ * dollars keeps them.
+ */
+const DEFAULT_CURRENCY: Currency = "KES";
+
 const CurrencyContext = createContext<CurrencyContextValue>({
-  currency: "USD",
+  currency: DEFAULT_CURRENCY,
   setCurrency: () => {},
-  format: (n) => `$${n.toFixed(2)}`,
+  format: (n) => `KSh ${usdToKes(n, RATES.KES).toLocaleString()}`,
 });
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setCurrencyState] = useState<Currency>("USD");
+  const [currency, setCurrencyState] = useState<Currency>(DEFAULT_CURRENCY);
 
   useEffect(() => {
     const stored = localStorage.getItem("currency") as Currency | null;
@@ -40,10 +54,15 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   };
 
   const format = (usdAmount: number): string => {
-    const converted = usdAmount * RATES[currency];
     const symbol = SYMBOLS[currency];
-    if (currency === "KES") return `${symbol}${Math.round(converted).toLocaleString()}`;
-    return `${symbol}${converted.toFixed(2)}`;
+    // Shillings go through the same helper the checkout charges with, not a
+    // second rounding of its own. They disagreed: display rounded and the
+    // charge rounds up, so the Arduino Uno read KSh 1,400 on the page and was
+    // billed at KSh 1,401. A price shown is a price promised.
+    if (currency === "KES") {
+      return `${symbol}${usdToKes(usdAmount, RATES.KES).toLocaleString()}`;
+    }
+    return `${symbol}${(usdAmount * RATES[currency]).toFixed(2)}`;
   };
 
   return (
