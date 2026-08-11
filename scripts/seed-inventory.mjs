@@ -152,9 +152,20 @@ async function setAttributes(productId, attributes) {
   const byKey = new Map(keys.map((k) => [k.key, k.id]));
 
   await db.from("product_attributes").delete().eq("product_id", productId);
-  const rows = Object.entries(attributes)
-    .filter(([k, v]) => byKey.has(k) && String(v).trim())
-    .map(([k, v]) => ({ product_id: productId, key_id: byKey.get(k), value: String(v).trim() }));
+
+  // One row per value, not per key. The unique constraint is on
+  // (product_id, key_id, value), so the schema was built for multi-value
+  // attributes — and faceting only works if they are stored that way. Writing
+  // "UART, I2C, SPI" as a single value produced seven near-duplicate protocol
+  // filters each matching one product, when what a buyer wants is to tick
+  // "I2C" and see all eight boards that speak it.
+  const rows = [];
+  for (const [k, v] of Object.entries(attributes)) {
+    if (!byKey.has(k)) continue;
+    for (const one of String(v).split(",").map((x) => x.trim()).filter(Boolean)) {
+      rows.push({ product_id: productId, key_id: byKey.get(k), value: one });
+    }
+  }
   if (rows.length) await db.from("product_attributes").insert(rows);
 }
 

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Product, toProduct } from "@/components/types";
 import Products from "@/components/products";
-import SpecFilters from "@/components/spec-filters";
+import SpecFilters, { MobileFilters } from "@/components/spec-filters";
 import type { Facet } from "@/lib/attributes";
 import { descendantNames, type CategoryNode } from "@/lib/categories";
 import { reportSearch } from "@/components/analytics-tracker";
@@ -163,16 +163,18 @@ function StoreInner({ initialProducts, categoryTree, facets, attributeIndex }: S
 
   return (
     <div className="space-y-6">
-      {/* Hero */}
-      <section className="border bg-grid px-6 sm:px-10 py-12">
+      {/* Hero. Tighter on a phone: at py-12 this panel ate 480px of an 844px
+          screen before the customer reached the search box, and it is scene
+          setting, not merchandise. */}
+      <section className="border bg-grid px-5 sm:px-10 py-7 sm:py-12">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div className="max-w-xl">
             <p className="label-micro text-muted-foreground flex items-center gap-2">
               <span className="inline-block size-1.5 rounded-full bg-signal signal-dot" />
               In stock · ships from Nairobi
             </p>
-            <h1 className="display-headline text-4xl sm:text-6xl mt-4">Catalogue</h1>
-            <p className="mt-4 text-sm text-muted-foreground max-w-md">
+            <h1 className="display-headline text-3xl sm:text-6xl mt-3 sm:mt-4">Catalogue</h1>
+            <p className="mt-3 sm:mt-4 text-sm text-muted-foreground max-w-md">
               Industrial sensors, control gear and automation components.
               Datasheet on every product. Pay with M-Pesa or card.
             </p>
@@ -204,6 +206,7 @@ function StoreInner({ initialProducts, categoryTree, facets, attributeIndex }: S
           />
         </div>
         <div className="flex gap-2 shrink-0">
+          <MobileFilters facets={facets} />
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
@@ -242,12 +245,15 @@ function StoreInner({ initialProducts, categoryTree, facets, attributeIndex }: S
         </div>
       </div>
 
-      {/* Category pills */}
+      {/* Category pills. A rail on a phone, wrapping from sm up — wrapping at
+          375px turned fourteen categories into seven rows of chips that pushed
+          every product below the fold. */}
       {!loading && !error && categoryOptions.length > 0 && (
-        <div className="flex gap-2 flex-wrap items-center">
+        <div className="-mx-4 sm:mx-0 overflow-x-auto sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-2 items-center px-4 sm:px-0 w-max sm:w-auto sm:flex-wrap">
           <button
             onClick={() => setActiveCategory("all")}
-            className={`px-3.5 py-1.5 rounded-sm text-sm transition-colors border ${
+            className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-sm text-sm transition-colors border ${
               activeCategory === "all"
                 ? "bg-foreground text-background border-foreground"
                 : "border-border text-muted-foreground hover:text-foreground hover:border-graphite"
@@ -260,7 +266,7 @@ function StoreInner({ initialProducts, categoryTree, facets, attributeIndex }: S
               key={option.id}
               onClick={() => setActiveCategory(option.id)}
               title={option.depth > 0 ? `Within ${option.label}` : undefined}
-              className={`px-3.5 py-1.5 rounded-sm text-sm transition-colors border inline-flex items-center gap-1.5 ${
+              className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-sm text-sm transition-colors border inline-flex items-center gap-1.5 ${
                 activeCategory === option.id
                   ? "bg-foreground text-background border-foreground"
                   : "border-border text-muted-foreground hover:text-foreground hover:border-graphite"
@@ -273,6 +279,7 @@ function StoreInner({ initialProducts, categoryTree, facets, attributeIndex }: S
               )}
             </button>
           ))}
+        </div>
         </div>
       )}
 
@@ -288,7 +295,9 @@ function StoreInner({ initialProducts, categoryTree, facets, attributeIndex }: S
       {/* Products */}
       {facets.length > 0 ? (
         <div className="grid lg:grid-cols-[220px_minmax(0,1fr)] gap-8 items-start">
-          <SpecFilters facets={facets} />
+          <div className="hidden lg:block">
+            <SpecFilters facets={facets} />
+          </div>
           <Products products={filtered} loading={loading} error={error} view={view} onRetry={load} />
         </div>
       ) : (
