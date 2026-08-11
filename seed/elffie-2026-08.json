@@ -1,0 +1,456 @@
+[
+  {
+    "name": "Arduino Uno R3",
+    "mpn": "UNO-R3",
+    "manufacturer": "Arduino compatible",
+    "sku": "MCU-UNO-R3",
+    "priceKes": 1400,
+    "stock": 30,
+    "category": "Microcontrollers & Microcomputers > Microcontrollers > Atmega",
+    "description": "The board most people start on, and the one most Kenyan workshops keep a drawer of. An ATmega328P at 16 MHz, 14 digital I/O and 6 analog inputs, powered over USB-B or a barrel jack. Shields stack straight onto it, which is why it stays in service long after you have outgrown it.\n\nStock here is Arduino-compatible rather than Italian-made, so the USB-serial chip is usually a CH340 \u2014 on Windows you may need the CH340 driver before the port shows up. If uploads fail with an avrdude sync error, try Tools > Processor > ATmega328P (Old Bootloader).",
+    "attributes": {
+      "supply_voltage": "5",
+      "connection": "USB",
+      "protocol": "UART, I2C, SPI",
+      "mounting": "Through-hole"
+    },
+    "links": [
+      {
+        "title": "Arduino Uno R3 \u2014 official documentation",
+        "url": "https://docs.arduino.cc/hardware/uno-rev3/"
+      },
+      {
+        "title": "Arduino IDE download",
+        "url": "https://www.arduino.cc/en/software"
+      },
+      {
+        "title": "ATmega328P datasheet (Microchip)",
+        "url": "https://www.microchip.com/en-us/product/ATmega328P"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Blink the on-board LED",
+        "language": "cpp",
+        "code": "// Nothing to wire \u2014 the LED is already on pin 13.\n\nvoid setup() {\n  pinMode(LED_BUILTIN, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(LED_BUILTIN, HIGH);\n  delay(1000);\n  digitalWrite(LED_BUILTIN, LOW);\n  delay(1000);\n}"
+      },
+      {
+        "title": "Read a potentiometer and dim an LED",
+        "language": "cpp",
+        "code": "// Pot wiper -> A0, outer legs -> 5V and GND\n// LED anode -> D9 via a 220R resistor, cathode -> GND\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(9, OUTPUT);\n}\n\nvoid loop() {\n  int raw = analogRead(A0);   // 10-bit: 0..1023\n  analogWrite(9, raw / 4);    // 8-bit PWM: 0..255\n  Serial.println(raw);\n  delay(50);\n}"
+      }
+    ],
+    "imageUrl": "https://yjtrnseyatlnwcmaxhnc.supabase.co/storage/v1/object/public/product-images/seed/uno.jpg"
+  },
+  {
+    "name": "Arduino Nano",
+    "mpn": "NANO-V3",
+    "manufacturer": "Arduino compatible",
+    "sku": "MCU-NANO-V3",
+    "priceKes": 1000,
+    "stock": 10,
+    "category": "Microcontrollers & Microcomputers > Microcontrollers > Atmega",
+    "description": "The same ATmega328P as the Uno in a package that drops into a breadboard, which is what you want once a project stops being an experiment and starts being a thing that has to live in a box.\n\nTwo things worth knowing before you order: A6 and A7 are analog-input only and cannot be used as digital pins, and the USB connector varies by batch \u2014 mini-B, micro or USB-C. Ask before ordering if the connector matters to you.",
+    "attributes": {
+      "supply_voltage": "5",
+      "connection": "USB",
+      "protocol": "UART, I2C, SPI",
+      "mounting": "Through-hole"
+    },
+    "links": [
+      {
+        "title": "Arduino Nano \u2014 official documentation",
+        "url": "https://docs.arduino.cc/hardware/nano/"
+      },
+      {
+        "title": "ATmega328P datasheet (Microchip)",
+        "url": "https://www.microchip.com/en-us/product/ATmega328P"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Button toggles the on-board LED",
+        "language": "cpp",
+        "code": "// Button between D2 and GND \u2014 the internal pull-up means no\n// external resistor is needed.\n\nconst uint8_t BTN = 2;\nbool on = false;\nuint8_t last = HIGH;\n\nvoid setup() {\n  pinMode(BTN, INPUT_PULLUP);\n  pinMode(LED_BUILTIN, OUTPUT);\n}\n\nvoid loop() {\n  uint8_t now = digitalRead(BTN);\n  if (last == HIGH && now == LOW) {   // falling edge = press\n    on = !on;\n    digitalWrite(LED_BUILTIN, on);\n    delay(30);                        // crude debounce\n  }\n  last = now;\n  delay(5);\n}"
+      }
+    ],
+    "imageUrl": "https://yjtrnseyatlnwcmaxhnc.supabase.co/storage/v1/object/public/product-images/seed/nano.jpg"
+  },
+  {
+    "name": "ESP32 Development Board",
+    "mpn": "ESP32-WROOM-32",
+    "manufacturer": "Espressif compatible",
+    "sku": "MCU-ESP32-DEV",
+    "priceKes": 1600,
+    "stock": 16,
+    "category": "Microcontrollers & Microcomputers > Microcontrollers > ESP",
+    "description": "Dual-core ESP32-WROOM-32 with Wi-Fi and Bluetooth on board. This is the part that replaces an Uno plus a wifi shield plus a bluetooth module, usually for less than any one of them, which is why most new connected projects here start on it.\n\nGPIO are 3.3 V and not 5 V tolerant \u2014 a 5 V sensor output needs a divider or a level shifter before it touches a pin. Boards come as 30-pin or 38-pin; ask if your enclosure or shield depends on which.",
+    "attributes": {
+      "supply_voltage": "3.3",
+      "connection": "USB",
+      "protocol": "Wi-Fi, Bluetooth, UART, I2C, SPI",
+      "output_type": "3.3V digital"
+    },
+    "links": [
+      {
+        "title": "ESP32 datasheet (Espressif)",
+        "url": "https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf"
+      },
+      {
+        "title": "ESP32 Arduino core \u2014 getting started",
+        "url": "https://docs.espressif.com/projects/arduino-esp32/en/latest/"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Connect to Wi-Fi and print the IP",
+        "language": "cpp",
+        "code": "#include <WiFi.h>\n\nconst char* SSID = \"your-network\";\nconst char* PASS = \"your-password\";\n\nvoid setup() {\n  Serial.begin(115200);\n  WiFi.begin(SSID, PASS);\n  Serial.print(\"connecting\");\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.print(\"\\nIP: \");\n  Serial.println(WiFi.localIP());\n}\n\nvoid loop() {}"
+      },
+      {
+        "title": "Scan the I2C bus",
+        "language": "cpp",
+        "code": "// SDA -> GPIO21, SCL -> GPIO22 (the ESP32 defaults)\n#include <Wire.h>\n\nvoid setup() {\n  Serial.begin(115200);\n  Wire.begin();\n  for (uint8_t a = 1; a < 127; a++) {\n    Wire.beginTransmission(a);\n    if (Wire.endTransmission() == 0) {\n      Serial.printf(\"device at 0x%02X\\n\", a);\n    }\n  }\n  Serial.println(\"done\");\n}\n\nvoid loop() {}"
+      }
+    ],
+    "imageUrl": "https://yjtrnseyatlnwcmaxhnc.supabase.co/storage/v1/object/public/product-images/seed/esp32.jpg"
+  },
+  {
+    "name": "ESP32-S2 Mini",
+    "mpn": "ESP32-S2-MINI",
+    "manufacturer": "Espressif compatible",
+    "sku": "MCU-ESP32-S2MINI",
+    "priceKes": 800,
+    "stock": 8,
+    "category": "Microcontrollers & Microcomputers > Microcontrollers > ESP",
+    "description": "A small single-core S2 board with native USB, which is the interesting part: it can present itself to a computer as a keyboard, a mouse or a mass-storage device without any extra hardware. Good where board space is tight.\n\nNote the S2 has Wi-Fi but no Bluetooth \u2014 if you need BLE, take the plain ESP32 or an S3 instead. Also 3.3 V logic, not 5 V tolerant.",
+    "attributes": {
+      "supply_voltage": "3.3",
+      "connection": "USB",
+      "protocol": "Wi-Fi, UART, I2C, SPI",
+      "output_type": "3.3V digital"
+    },
+    "links": [
+      {
+        "title": "ESP32-S2 datasheet (Espressif)",
+        "url": "https://www.espressif.com/sites/default/files/documentation/esp32-s2_datasheet_en.pdf"
+      },
+      {
+        "title": "ESP32 Arduino core documentation",
+        "url": "https://docs.espressif.com/projects/arduino-esp32/en/latest/"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Blink, and print over native USB serial",
+        "language": "cpp",
+        "code": "// No external wiring. On native-USB boards the serial port only\n// appears once the sketch is running, so give it a moment.\n\nvoid setup() {\n  Serial.begin(115200);\n  delay(2000);            // let the USB CDC port enumerate\n  pinMode(LED_BUILTIN, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(LED_BUILTIN, HIGH);\n  Serial.println(\"on\");\n  delay(500);\n  digitalWrite(LED_BUILTIN, LOW);\n  Serial.println(\"off\");\n  delay(500);\n}"
+      }
+    ]
+  },
+  {
+    "name": "ESP32-CAM",
+    "mpn": "ESP32-CAM",
+    "manufacturer": "Espressif compatible",
+    "sku": "MCU-ESP32-CAM",
+    "priceKes": 1400,
+    "stock": 3,
+    "category": "Microcontrollers & Microcomputers > Microcontrollers > ESP",
+    "description": "An ESP32 with a camera module and a microSD slot, sold as one board. It runs a web server that streams video over Wi-Fi with about ten lines of setup, which makes it the cheapest way to put a camera on a network.\n\nThe gotcha that catches everyone: there is no USB port on it. You need a separate USB-to-TTL adapter to program it, and you must jumper GPIO0 to GND to enter flash mode, then remove the jumper and reset to run. Order an adapter with it if you do not already have one.",
+    "attributes": {
+      "supply_voltage": "5",
+      "protocol": "Wi-Fi, Bluetooth, UART",
+      "output_type": "3.3V digital"
+    },
+    "links": [
+      {
+        "title": "ESP32-CAM guide \u2014 Random Nerd Tutorials",
+        "url": "https://randomnerdtutorials.com/esp32-cam-video-streaming-face-recognition-arduino-ide/"
+      },
+      {
+        "title": "ESP32 Arduino core documentation",
+        "url": "https://docs.espressif.com/projects/arduino-esp32/en/latest/"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Wiring it to a USB-TTL adapter to flash",
+        "language": "text",
+        "code": "ESP32-CAM        USB-TTL adapter (set to 5V)\n---------        --------------------------\n5V           ->  5V\nGND          ->  GND\nU0T (TX)     ->  RX\nU0R (RX)     ->  TX\n\nTo flash: jumper GPIO0 to GND, then press RESET.\nUpload, then REMOVE the jumper and press RESET again to run.\n\nIn the Arduino IDE choose Board: \"AI Thinker ESP32-CAM\"."
+      }
+    ],
+    "imageUrl": "https://yjtrnseyatlnwcmaxhnc.supabase.co/storage/v1/object/public/product-images/seed/esp32cam.jpg"
+  },
+  {
+    "name": "ESP8266 NodeMCU",
+    "mpn": "NODEMCU-ESP8266",
+    "manufacturer": "Espressif compatible",
+    "sku": "MCU-ESP8266-NODEMCU",
+    "priceKes": 900,
+    "stock": 18,
+    "category": "Microcontrollers & Microcomputers > Microcontrollers > ESP",
+    "description": "The ESP32's older, cheaper sibling: single core, Wi-Fi only, and still perfectly good for anything that just needs to get a reading onto a network. If your project is a sensor that posts to a server every minute, this does it for less.\n\n3.3 V logic, not 5 V tolerant. Note the silkscreen labels (D1, D2...) do not match the GPIO numbers you use in code \u2014 D1 is GPIO5, D2 is GPIO4. Keep a pinout to hand.",
+    "attributes": {
+      "supply_voltage": "3.3",
+      "connection": "USB",
+      "protocol": "Wi-Fi, UART, I2C, SPI",
+      "output_type": "3.3V digital"
+    },
+    "links": [
+      {
+        "title": "ESP8266 Arduino core documentation",
+        "url": "https://arduino-esp8266.readthedocs.io/en/latest/"
+      },
+      {
+        "title": "ESP8266EX datasheet (Espressif)",
+        "url": "https://www.espressif.com/sites/default/files/documentation/0a-esp8266ex_datasheet_en.pdf"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Join Wi-Fi and report signal strength",
+        "language": "cpp",
+        "code": "#include <ESP8266WiFi.h>\n\nconst char* SSID = \"your-network\";\nconst char* PASS = \"your-password\";\n\nvoid setup() {\n  Serial.begin(115200);\n  WiFi.begin(SSID, PASS);\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(\".\");\n  }\n  Serial.print(\"\\nIP: \");\n  Serial.println(WiFi.localIP());\n}\n\nvoid loop() {\n  Serial.printf(\"RSSI %d dBm\\n\", WiFi.RSSI());\n  delay(5000);\n}"
+      }
+    ],
+    "imageUrl": "https://yjtrnseyatlnwcmaxhnc.supabase.co/storage/v1/object/public/product-images/seed/esp8266.jpg"
+  },
+  {
+    "name": "STM32 Blue Pill (STM32F103C8T6)",
+    "mpn": "STM32F103C8T6",
+    "manufacturer": "Generic",
+    "sku": "MCU-STM32-BLUEPILL",
+    "priceKes": 600,
+    "stock": 10,
+    "category": "Microcontrollers & Microcomputers > Microcontrollers",
+    "description": "An Arm Cortex-M3 board for when an AVR runs out of speed or peripherals. Considerably more capable than an Uno for the money, and the usual step up for motor control, signal work, or anything needing real timers.\n\nTwo well-known quirks of this board: many clones ship with the wrong USB pull-up resistor fitted, so USB may not enumerate until it is changed, and there is no USB bootloader out of the box \u2014 most people program it with an ST-Link V2 through the SWD header. Budget for an ST-Link if you do not have one.",
+    "attributes": {
+      "supply_voltage": "3.3",
+      "protocol": "UART, I2C, SPI, CAN",
+      "output_type": "3.3V digital",
+      "mounting": "Through-hole"
+    },
+    "links": [
+      {
+        "title": "STM32F103C8 product page and datasheet (ST)",
+        "url": "https://www.st.com/en/microcontrollers-microprocessors/stm32f103c8.html"
+      },
+      {
+        "title": "STM32duino \u2014 Arduino core for STM32",
+        "url": "https://github.com/stm32duino/Arduino_Core_STM32"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Blink on PC13 (the on-board LED)",
+        "language": "cpp",
+        "code": "// Using the STM32duino core. The on-board LED sits on PC13 and is\n// active LOW, so LOW turns it on.\n\nvoid setup() {\n  pinMode(PC13, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(PC13, LOW);   // on\n  delay(500);\n  digitalWrite(PC13, HIGH);  // off\n  delay(500);\n}"
+      }
+    ],
+    "imageUrl": "https://yjtrnseyatlnwcmaxhnc.supabase.co/storage/v1/object/public/product-images/seed/stm32.jpg"
+  },
+  {
+    "name": "Raspberry Pi Pico",
+    "mpn": "SC0915",
+    "manufacturer": "Raspberry Pi",
+    "sku": "MCU-PI-PICO",
+    "priceKes": 900,
+    "stock": 5,
+    "category": "Microcontrollers & Microcomputers > Microcontrollers",
+    "description": "The official RP2040 board \u2014 dual-core, and unusually well documented for the price. Its distinguishing feature is PIO: programmable state machines that generate or capture timing-critical signals in hardware, so driving LED strips or a bit-banged protocol does not cost you the main CPU.\n\nRuns MicroPython or C. Ships with no headers soldered, and 3.3 V GPIO that are not 5 V tolerant. If you need Wi-Fi, you want the Pico W, not this.",
+    "attributes": {
+      "supply_voltage": "3.3",
+      "connection": "micro-USB",
+      "protocol": "UART, I2C, SPI, USB",
+      "output_type": "3.3V digital",
+      "mounting": "Through-hole"
+    },
+    "links": [
+      {
+        "title": "Raspberry Pi Pico product page",
+        "url": "https://www.raspberrypi.com/products/raspberry-pi-pico/"
+      },
+      {
+        "title": "Pico datasheet (PDF)",
+        "url": "https://datasheets.raspberrypi.com/pico/pico-datasheet.pdf"
+      },
+      {
+        "title": "RP2040 datasheet (PDF)",
+        "url": "https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Blink the on-board LED (MicroPython)",
+        "language": "python",
+        "code": "# Nothing to wire \u2014 the LED is on GP25.\n# On a Pico W it is Pin(\"LED\") instead.\nfrom machine import Pin\nimport time\n\nled = Pin(25, Pin.OUT)\n\nwhile True:\n    led.toggle()\n    time.sleep(0.5)"
+      },
+      {
+        "title": "Scan the I2C bus (MicroPython)",
+        "language": "python",
+        "code": "# module SDA -> GP0 (pin 1), SCL -> GP1 (pin 2)\n# module VCC -> 3V3(OUT) (pin 36), GND -> GND (pin 38)\nfrom machine import Pin, I2C\n\ni2c = I2C(0, sda=Pin(0), scl=Pin(1), freq=400000)\n\nfound = i2c.scan()\nif not found:\n    print(\"nothing on the bus \u2014 check wiring and pull-ups\")\nfor addr in found:\n    print(\"device at 0x{:02x}\".format(addr))"
+      }
+    ],
+    "imageUrl": "https://yjtrnseyatlnwcmaxhnc.supabase.co/storage/v1/object/public/product-images/seed/pipico.jpg"
+  },
+  {
+    "name": "HC-SR04 Ultrasonic Distance Sensor",
+    "mpn": "HC-SR04",
+    "manufacturer": "Generic",
+    "sku": "SEN-HCSR04",
+    "priceKes": 250,
+    "stock": 22,
+    "category": "Sensors",
+    "description": "The standard four-pin ultrasonic ranger. You pulse TRIG, time how long ECHO stays high, and convert to distance. Cheap, reliable enough for obstacle avoidance and tank level, and the first sensor most robots get.\n\nWorth knowing: it does not see soft or angled surfaces well \u2014 cloth absorbs the pulse and a surface tilted away reflects it elsewhere. ECHO idles at 5 V, so on a 3.3 V board (ESP32, Pico) put a divider on that pin.",
+    "attributes": {
+      "supply_voltage": "5",
+      "output_type": "Digital pulse",
+      "mounting": "Through-hole"
+    },
+    "links": [
+      {
+        "title": "HC-SR04 overview and wiring \u2014 Components101",
+        "url": "https://components101.com/sensors/ultrasonic-sensor-working-pinout-datasheet"
+      },
+      {
+        "title": "Arduino ultrasonic sensor tutorial",
+        "url": "https://docs.arduino.cc/built-in-examples/sensors/Ping"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Measure distance in centimetres",
+        "language": "cpp",
+        "code": "// VCC -> 5V, GND -> GND, TRIG -> D9, ECHO -> D10\n// On a 3.3V board, divide ECHO down first.\n\nconst uint8_t TRIG = 9, ECHO = 10;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(TRIG, OUTPUT);\n  pinMode(ECHO, INPUT);\n}\n\nvoid loop() {\n  digitalWrite(TRIG, LOW);  delayMicroseconds(2);\n  digitalWrite(TRIG, HIGH); delayMicroseconds(10);\n  digitalWrite(TRIG, LOW);\n\n  // Time out after ~30 ms so a missing echo does not block the loop.\n  unsigned long us = pulseIn(ECHO, HIGH, 30000UL);\n  if (us == 0) {\n    Serial.println(\"no echo\");\n  } else {\n    // Sound travels ~0.0343 cm/us; halve it for the round trip.\n    Serial.print(us * 0.0343 / 2.0);\n    Serial.println(\" cm\");\n  }\n  delay(100);\n}"
+      }
+    ],
+    "imageUrl": "https://yjtrnseyatlnwcmaxhnc.supabase.co/storage/v1/object/public/product-images/seed/ultrasonic.jpg"
+  },
+  {
+    "name": "L298N Motor Driver Module",
+    "mpn": "L298N",
+    "manufacturer": "Generic",
+    "sku": "DRV-L298N",
+    "priceKes": 300,
+    "stock": 26,
+    "category": "Motors > DC Motors",
+    "description": "A dual H-bridge on a board with a heatsink and screw terminals \u2014 two DC motors forwards and backwards with speed control, or one stepper. The workhorse for small robots and anything with wheels.\n\nIt is an older bipolar design and drops a couple of volts across the bridge, so motors run slightly slower than the supply suggests and the heatsink gets warm under load. The on-board 5 V regulator can power your microcontroller, but only with the jumper fitted and the motor supply under roughly 12 V \u2014 above that, remove the jumper and feed the logic separately.",
+    "attributes": {
+      "output_type": "H-bridge",
+      "mounting": "Screw terminal"
+    },
+    "links": [
+      {
+        "title": "L298 datasheet (STMicroelectronics)",
+        "url": "https://www.st.com/resource/en/datasheet/l298.pdf"
+      },
+      {
+        "title": "L298N module wiring guide \u2014 Last Minute Engineers",
+        "url": "https://lastminuteengineers.com/l298n-dc-stepper-driver-arduino-tutorial/"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Drive one motor both ways with speed control",
+        "language": "cpp",
+        "code": "// ENA -> D9 (PWM), IN1 -> D8, IN2 -> D7\n// Motor supply to +12V/GND terminals, GND shared with the Arduino.\n\nconst uint8_t ENA = 9, IN1 = 8, IN2 = 7;\n\nvoid setup() {\n  pinMode(ENA, OUTPUT);\n  pinMode(IN1, OUTPUT);\n  pinMode(IN2, OUTPUT);\n}\n\nvoid drive(int speed) {          // -255..255\n  bool forward = speed >= 0;\n  digitalWrite(IN1, forward);\n  digitalWrite(IN2, !forward);\n  analogWrite(ENA, abs(speed) > 255 ? 255 : abs(speed));\n}\n\nvoid loop() {\n  drive(200);   delay(2000);   // forward\n  drive(0);     delay(500);    // stop\n  drive(-200);  delay(2000);   // reverse\n  drive(0);     delay(500);\n}"
+      }
+    ]
+  },
+  {
+    "name": "HC-06 Bluetooth Module",
+    "mpn": "HC-06",
+    "manufacturer": "Generic",
+    "sku": "COM-HC06",
+    "priceKes": 800,
+    "stock": 25,
+    "category": "Communication",
+    "description": "Classic Bluetooth serial. Pair it with a phone and anything you print to the serial port arrives in a terminal app \u2014 the quickest way to add a remote control or a data readout to a project without touching Wi-Fi.\n\nThe HC-06 is slave-only: a phone or PC can connect to it, but it cannot initiate a connection to another device. If you need two modules talking to each other, you want an HC-05 for at least one end. Also note it is Bluetooth Classic, not BLE, so it will not pair with iPhones \u2014 Android and Windows only.",
+    "attributes": {
+      "supply_voltage": "5",
+      "protocol": "Bluetooth, UART",
+      "connection": "Serial"
+    },
+    "links": [
+      {
+        "title": "HC-06 wiring and AT commands \u2014 Components101",
+        "url": "https://components101.com/wireless/hc-06-bluetooth-module-pinout-datasheet"
+      },
+      {
+        "title": "Arduino SoftwareSerial reference",
+        "url": "https://docs.arduino.cc/learn/built-in-libraries/software-serial"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Echo between the module and the serial monitor",
+        "language": "cpp",
+        "code": "// VCC -> 5V, GND -> GND\n// Module TXD -> D10 (Arduino RX)\n// Module RXD -> D11 (Arduino TX) THROUGH A DIVIDER \u2014 the RXD pin\n// is 3.3V logic and 5V straight into it will damage it over time.\n#include <SoftwareSerial.h>\n\nSoftwareSerial bt(10, 11);   // RX, TX\n\nvoid setup() {\n  Serial.begin(9600);\n  bt.begin(9600);            // default baud on most HC-06 modules\n  Serial.println(\"ready \u2014 pair, then type\");\n}\n\nvoid loop() {\n  if (bt.available())     Serial.write(bt.read());\n  if (Serial.available()) bt.write(Serial.read());\n}"
+      }
+    ]
+  },
+  {
+    "name": "N20 Gearmotor 300 RPM",
+    "mpn": "N20-300RPM",
+    "manufacturer": "Generic",
+    "sku": "MOT-N20-300",
+    "priceKes": 600,
+    "stock": 40,
+    "category": "Motors > DC Motors",
+    "description": "A micro metal gearmotor with a 3 mm D-shaft \u2014 small enough for a palm-sized robot, geared enough to actually move it. 300 rpm is the middle of the N20 range: quick enough for a line follower, slow enough to have usable torque.\n\nRun it from a driver, not from a microcontroller pin. The N20 wheels we stock fit this shaft directly.",
+    "attributes": {
+      "supply_voltage": "6",
+      "mounting": "Bracket"
+    },
+    "links": [
+      {
+        "title": "N20 gearmotor overview \u2014 Pololu",
+        "url": "https://www.pololu.com/category/60/micro-metal-gearmotors"
+      }
+    ],
+    "snippets": [
+      {
+        "title": "Two N20s as a differential drive, via an L298N",
+        "language": "cpp",
+        "code": "// Left  motor: ENA -> D9,  IN1 -> D8,  IN2 -> D7\n// Right motor: ENB -> D10, IN3 -> D6,  IN4 -> D5\n// Motor supply to the L298N terminals; share GND with the Arduino.\n\nconst uint8_t ENA=9, IN1=8, IN2=7, ENB=10, IN3=6, IN4=5;\n\nvoid setup() {\n  for (uint8_t p : {ENA, IN1, IN2, ENB, IN3, IN4}) pinMode(p, OUTPUT);\n}\n\nvoid wheels(int left, int right) {   // -255..255 each\n  digitalWrite(IN1, left  >= 0); digitalWrite(IN2, left  < 0);\n  digitalWrite(IN3, right >= 0); digitalWrite(IN4, right < 0);\n  analogWrite(ENA, min(abs(left), 255));\n  analogWrite(ENB, min(abs(right), 255));\n}\n\nvoid loop() {\n  wheels(180, 180);  delay(1500);   // forward\n  wheels(180, -180); delay(600);    // spin\n  wheels(0, 0);      delay(400);\n}"
+      }
+    ]
+  },
+  {
+    "name": "N20 Motor Wheels",
+    "mpn": "N20-WHEEL",
+    "manufacturer": "Generic",
+    "sku": "MOT-N20-WHEEL",
+    "priceKes": 150,
+    "stock": 40,
+    "category": "Motors > DC Motors",
+    "description": "Rubber-tyred wheels that push onto the 3 mm D-shaft of an N20 gearmotor. Sold singly, so a two-wheel robot needs two and a four-wheel one needs four.\n\nThe D-shaped bore only goes on one way round, which is what stops the wheel slipping on the shaft under load.",
+    "attributes": {
+      "mounting": "D-shaft"
+    },
+    "links": [],
+    "snippets": []
+  },
+  {
+    "name": "LM2596 Buck Converter Module",
+    "mpn": "LM2596",
+    "manufacturer": "Generic",
+    "sku": "PWR-LM2596",
+    "priceKes": 300,
+    "stock": 9,
+    "category": "Power",
+    "description": "An adjustable step-down regulator on a small board \u2014 feed it a higher DC voltage, turn the trimmer, get a lower one out. This is how you run 5 V logic off a 12 V battery without cooking a linear regulator.\n\nSet the output before you connect anything to it: power the input, turn the trimmer while watching a meter on the output, then wire up your load. The trimmer is multi-turn, so it takes several rotations to move \u2014 that is normal, not a fault.",
+    "attributes": {
+      "output_type": "Adjustable DC",
+      "mounting": "Through-hole"
+    },
+    "links": [
+      {
+        "title": "LM2596 datasheet (Texas Instruments)",
+        "url": "https://www.ti.com/lit/ds/symlink/lm2596.pdf"
+      }
+    ],
+    "snippets": [],
+    "imageUrl": "https://yjtrnseyatlnwcmaxhnc.supabase.co/storage/v1/object/public/product-images/seed/buck.jpg"
+  }
+]

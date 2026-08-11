@@ -21,19 +21,26 @@ const nextConfig = {
     ];
   },
   images: {
+    // The list previously ended with `hostname: "**"` as a catch-all. `**` is
+    // only valid at the START of a hostname, and more to the point a catch-all
+    // makes this an open image proxy: anyone could push arbitrary images from
+    // anywhere through our optimiser, on our bandwidth. Named hosts only.
+    //
+    // Note: `next start` on 16.3.0 rejects every remote image locally with
+    // `"url" parameter is not allowed` — it re-globs the already-compiled
+    // patterns out of images-manifest.json, so nothing can match. Vercel's
+    // optimiser does not do this and production serves these fine (verified
+    // against the live site). Do not "fix" it here with unoptimized: true;
+    // that would degrade production to work around a local-only quirk.
     remotePatterns: [
-      // Google Drive / user content
+      { protocol: "https", hostname: "**.supabase.co" },
+      { protocol: "https", hostname: "**.supabase.in" },
       { protocol: "https", hostname: "drive.google.com" },
-      { protocol: "https", hostname: "*.googleusercontent.com" },
-      // Supabase Storage
-      { protocol: "https", hostname: "*.supabase.co" },
-      { protocol: "https", hostname: "*.supabase.in" },
-      // Common image CDNs
+      { protocol: "https", hostname: "**.googleusercontent.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "cdn.jsdelivr.net" },
       { protocol: "https", hostname: "res.cloudinary.com" },
-      // Catch-all for any HTTPS image source used in products
-      { protocol: "https", hostname: "**" },
+      { protocol: "https", hostname: "upload.wikimedia.org" },
     ],
   },
 };
