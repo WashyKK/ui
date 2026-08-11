@@ -21,7 +21,7 @@ export default function CancelPage() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/"
-            className="px-5 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90 transition"
+            className="px-5 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition"
           >
             Back to Store
           </Link>

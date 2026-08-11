@@ -13,7 +13,7 @@ export default async function AdminPage() {
         <h1 className="text-2xl font-semibold">Admin</h1>
         <p className="text-muted-foreground mt-2">Please log in to manage products.</p>
         <div className="mt-4">
-          <Link href="/admin/login" className="px-4 py-2 rounded-md bg-accent text-white">Go to Login</Link>
+          <Link href="/admin/login" className="px-4 py-2 rounded-md bg-foreground text-background">Go to Login</Link>
         </div>
       </div>
     );

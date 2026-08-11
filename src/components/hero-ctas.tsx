@@ -19,7 +19,7 @@ export default function HeroCTAs() {
         className={
           onStore
             ? "px-5 py-2 rounded-lg bg-accent text-white hover:opacity-90 active:opacity-80 transition"
-            : "px-5 py-2 rounded-lg border border-accent text-accent hover:bg-accent hover:text-white active:opacity-80 transition"
+            : "px-5 py-2 rounded-lg border border-foreground text-foreground hover:bg-foreground hover:text-background active:opacity-80 transition"
         }
         aria-current={onStore ? "page" : undefined}
       >

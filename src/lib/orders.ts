@@ -181,3 +181,90 @@ export async function settleOrder(
 
   return { settled: true };
 }
+
+/**
+ * Bring a Stripe order up to the canonical shape.
+ *
+ * The Stripe paths predate `orders_canonical.sql` and were still writing only
+ * the legacy columns — `amount_total`, `cart_items`, `product_id`. Everything
+ * that reads orders now (the admin list, /api/orders/lookup, account history)
+ * reads `order_number`, `amount_minor` and `items`, so every Stripe order
+ * showed up with a blank reference and a dash for the total. The row was there;
+ * nothing could say anything useful about it.
+ *
+ * Two callers race for the same session — the webhook and the success page —
+ * so this is written to be idempotent. The order number is allocated once and
+ * then preserved: regenerating it on the second write would change an order's
+ * reference after the customer had already been shown it.
+ */
+export async function recordStripeOrder(input: {
+  sessionId: string;
+  email: string | null;
+  cartItems: { productId: string; quantity: number }[];
+  amountTotalUsdCents: number;
+  shippingZone?: string | null;
+  shippingAmountUsd?: number | null;
+}): Promise<{ orderNumber: string | null }> {
+  const { sessionId, email, cartItems, amountTotalUsdCents } = input;
+
+  const { data: existing } = await supabaseServer
+    .from("orders")
+    .select("order_number, status")
+    .eq("stripe_session_id", sessionId)
+    .maybeSingle();
+
+  const orderNumber = existing?.order_number ?? (await generateOrderNumber());
+
+  // Snapshot name and unit price now, so a later price edit never rewrites what
+  // this customer was charged.
+  const items: OrderItem[] = [];
+  for (const line of cartItems) {
+    const { data: p } = await supabaseServer
+      .from("products")
+      .select("name, price")
+      .eq("id", line.productId)
+      .maybeSingle();
+    items.push({
+      productId: line.productId,
+      name: p?.name ?? "Product",
+      unitPriceUsd: Number(p?.price ?? 0),
+      quantity: line.quantity,
+    });
+  }
+
+  const fxRate = getUsdToKesRate();
+  const totalUsd = amountTotalUsdCents / 100;
+
+  const { error } = await supabaseServer.from("orders").upsert(
+    {
+      stripe_session_id: sessionId,
+      order_number: orderNumber,
+      provider: "stripe",
+      provider_ref: sessionId,
+      status: "paid",
+      currency: "USD",
+      amount_total: amountTotalUsdCents,
+      // The store quotes and reports in shillings, so the canonical total is
+      // KES minor units even when Stripe took the money in dollars.
+      amount_minor: Math.round(usdToKes(totalUsd, fxRate) * 100),
+      fx_rate_usd_kes: fxRate,
+      subtotal_usd: totalUsd - Number(input.shippingAmountUsd ?? 0),
+      shipping_usd: Number(input.shippingAmountUsd ?? 0) || null,
+      items,
+      customer_email: email,
+      product_id: cartItems.length === 1 ? cartItems[0].productId : null,
+      quantity: cartItems.reduce((s, i) => s + i.quantity, 0),
+      shipping_zone: input.shippingZone ?? null,
+      shipping_amount: input.shippingAmountUsd ?? null,
+      cart_items: cartItems.length > 0 ? cartItems : null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "stripe_session_id" }
+  );
+
+  if (error) {
+    console.error("recordStripeOrder failed:", error.message);
+    return { orderNumber: null };
+  }
+  return { orderNumber };
+}

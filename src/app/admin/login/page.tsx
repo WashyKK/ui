@@ -9,9 +9,12 @@ import { supabase } from "@/lib/supabaseClient";
 import { Loader2 } from "lucide-react";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  not_admin: "That Google account is not the admin account.",
-  auth_failed: "Google authentication failed. Please try again.",
-  no_code: "Missing authentication code. Please try again.",
+  not_admin: "That Google account does not have access to the admin panel.",
+  auth_failed: "Google sign in did not complete. Please try again.",
+  // Not "missing authentication code" any more: the callback no longer reads a
+  // code out of the URL, so the only thing that can go wrong is the session
+  // never arriving.
+  no_session: "Sign in timed out before it completed. Please try again.",
 };
 
 function LoginForm() {

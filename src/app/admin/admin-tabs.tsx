@@ -31,22 +31,30 @@ export default function AdminTabs({ isAdmin }: Props) {
   ];
 
   return (
-    <div className="container mx-auto p-6">
-      {/* Tab bar */}
-      <div className="flex gap-1 mb-8 border-b">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActive(tab.id)}
-            className={`px-5 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              active === tab.id
-                ? "border-accent text-accent"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <div className="container mx-auto px-4 sm:px-6 py-6">
+      {/* Tab bar.
+          The eight tabs are far wider than a phone. Without a scroll container
+          of their own they widened the page itself, which dragged the header,
+          the search box and every table sideways with them — the whole document
+          scrolled horizontally instead of just this strip. The negative margin
+          lets it bleed to the screen edge so it reads as a scrollable rail
+          rather than content that has been cut off. */}
+      <div className="-mx-4 sm:-mx-6 mb-8 border-b overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-1 px-4 sm:px-6 w-max">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActive(tab.id)}
+              className={`shrink-0 whitespace-nowrap px-4 sm:px-5 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                active === tab.id
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {active === "orders" && <OrdersPanel />}

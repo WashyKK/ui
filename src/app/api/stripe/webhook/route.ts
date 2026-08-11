@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { recordStripeOrder } from "@/lib/orders";
 import { sendOrderConfirmation } from "@/lib/email";
 import { decrementStock } from "@/lib/stock";
 
@@ -40,16 +41,14 @@ export async function POST(req: Request) {
     // Decrement stock for all items
     await decrementStock(cartItems.map((i) => ({ id: i.productId, quantity: i.quantity })));
 
-    await supabaseServer.from("orders").upsert({
-      stripe_session_id: session.id,
-      product_id: cartItems.length === 1 ? cartItems[0].productId : null,
-      quantity: cartItems.reduce((s, i) => s + i.quantity, 0),
-      amount_total: amountTotal,
-      customer_email: email,
-      shipping_zone: shippingZone || null,
-      shipping_amount: shippingAmount || null,
-      cart_items: cartItems.length > 1 ? cartItems : null,
-    }, { onConflict: "stripe_session_id" });
+    const { orderNumber } = await recordStripeOrder({
+      sessionId: session.id,
+      email,
+      cartItems,
+      amountTotalUsdCents: amountTotal,
+      shippingZone: shippingZone || null,
+      shippingAmountUsd: shippingAmount || null,
+    });
 
     // Send order confirmation email
     if (email && cartItems.length) {
@@ -66,7 +65,7 @@ export async function POST(req: Request) {
       const subtotalUSD = resolvedItems.reduce((s, i) => s + i.price * i.quantity, 0);
       await sendOrderConfirmation({
         to: email,
-        orderRef: session.id.slice(-8).toUpperCase(),
+        orderRef: orderNumber ?? session.id.slice(-8).toUpperCase(),
         items: resolvedItems,
         subtotalUsd: subtotalUSD,
         shippingUsd: shippingAmount,

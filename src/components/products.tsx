@@ -155,7 +155,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
         </p>
         <a
           href="/contact"
-          className="mt-5 inline-block px-5 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90 transition"
+          className="mt-5 inline-block px-5 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition"
         >
           Contact Sales
         </a>
@@ -180,7 +180,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-semibold text-base group-hover:text-accent transition-colors">
+                      <h3 className="font-semibold text-base group-hover:text-foreground transition-colors">
                         {product.name}
                       </h3>
                       {product.category && (
@@ -202,7 +202,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                   <div className="mt-2.5 flex items-center gap-3 flex-wrap">
                     <StockBadge stock={product.stock} />
                     {product.datasheetUrl && (
-                      <span className="flex items-center gap-1 text-xs text-accent font-medium">
+                      <span className="flex items-center gap-1 text-xs text-foreground font-medium">
                         <FileText className="h-3.5 w-3.5" />
                         Datasheet
                       </span>
@@ -251,7 +251,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
               </div>
               <div className="p-4 space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-base leading-snug group-hover:text-accent transition-colors">
+                  <h3 className="font-semibold text-base leading-snug group-hover:text-foreground transition-colors">
                     {product.name}
                   </h3>
                   <StockBadge stock={product.stock} />
@@ -270,7 +270,7 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                   </span>
                   <div className="flex items-center gap-3">
                     {product.datasheetUrl && (
-                      <span className="flex items-center gap-1 text-xs text-accent font-medium">
+                      <span className="flex items-center gap-1 text-xs text-foreground font-medium">
                         <FileText className="h-3.5 w-3.5" />
                         Datasheet
                       </span>
@@ -370,13 +370,13 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
 
               {selected.datasheetUrl && (
                 <div className="flex items-center gap-3 pt-1 border-t">
-                  <FileText className="h-4 w-4 text-accent shrink-0" />
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="text-sm font-medium">Datasheet</span>
                   <a
                     href={selected.datasheetUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-accent underline underline-offset-4 hover:opacity-80"
+                    className="text-sm text-foreground underline underline-offset-4 hover:opacity-80"
                   >
                     View PDF
                   </a>

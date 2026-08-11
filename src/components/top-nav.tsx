@@ -29,13 +29,16 @@ export default function TopNav({ initialIsAdmin = false, initialIsManager = fals
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const { totalItems, openCart } = useCart();
-  const { user, loading, isAdmin: ctxAdmin, isManager: ctxManager, signIn, signOut } = useUser();
+  const { user, loading, isAdmin: ctxAdmin, isManager: ctxManager, roleChecked, signIn, signOut } = useUser();
   const { currency, setCurrency } = useCurrency();
 
   // The server-rendered values matter: without them the admin link pops in a
-  // frame late, after the client role check resolves.
-  const isAdmin = ctxAdmin || initialIsAdmin;
-  const isManager = ctxManager || initialIsManager;
+  // frame late, after the client role check resolves. But they are only a
+  // stand-in until the client has its own answer — OR-ing the two forever made
+  // the link monotonic, so signing out could never take it away without a full
+  // page load.
+  const isAdmin = roleChecked ? ctxAdmin : initialIsAdmin;
+  const isManager = roleChecked ? ctxManager : initialIsManager;
 
   const displayName =
     user?.user_metadata?.full_name ||

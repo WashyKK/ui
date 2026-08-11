@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import Stripe from "stripe";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { recordStripeOrder } from "@/lib/orders";
 
 export const metadata: Metadata = {
   title: "Order confirmed",
@@ -34,20 +35,14 @@ async function recordOrder(sessionId: string) {
     cartItems = [{ productId: meta.productId, quantity: parseInt(meta.quantity || "1", 10) }];
   }
 
-  await supabaseServer.from("orders").upsert({
-    stripe_session_id: session.id,
-    provider: "stripe",
-    provider_ref: session.id,
-    status: "paid",
-    currency: "USD",
-    product_id: cartItems.length === 1 ? cartItems[0].productId : null,
-    quantity: cartItems.reduce((s, i) => s + i.quantity, 0),
-    amount_total: session.amount_total ?? 0,
-    customer_email: email,
-    shipping_zone: shippingZone,
-    shipping_amount: shippingAmount,
-    cart_items: cartItems.length > 0 ? cartItems : null,
-  }, { onConflict: "stripe_session_id" });
+  await recordStripeOrder({
+    sessionId: session.id,
+    email,
+    cartItems,
+    amountTotalUsdCents: session.amount_total ?? 0,
+    shippingZone,
+    shippingAmountUsd: shippingAmount,
+  });
 }
 
 export default async function SuccessPage({

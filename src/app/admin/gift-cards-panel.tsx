@@ -130,7 +130,7 @@ export default function GiftCardsPanel() {
       </div>
 
       {summary && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="border p-4">
             <p className="label-micro text-muted-foreground">Cards</p>
             <p className="text-2xl font-semibold tabular-nums mt-1">{summary.count}</p>

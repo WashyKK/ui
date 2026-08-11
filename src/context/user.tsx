@@ -9,6 +9,10 @@ interface UserContextValue {
   loading: boolean;
   isAdmin: boolean;
   isManager: boolean;
+  /** False until the client has asked the server what this visitor's role is.
+   *  Callers use it to decide whether the server-rendered guess is still the
+   *  best answer, or whether their own check has superseded it. */
+  roleChecked: boolean;
   signIn: () => void;
   signOut: () => Promise<void>;
 }
@@ -18,6 +22,7 @@ const UserContext = createContext<UserContextValue>({
   loading: true,
   isAdmin: false,
   isManager: false,
+  roleChecked: false,
   signIn: () => {},
   signOut: async () => {},
 });
@@ -27,6 +32,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isManager, setIsManager] = useState(false);
+  const [roleChecked, setRoleChecked] = useState(false);
 
   const checkRole = async () => {
     try {
@@ -34,7 +40,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       const d = await res.json();
       setIsAdmin(!!d.isAdmin);
       setIsManager(!!d.isManager);
-    } catch {}
+    } catch {
+      // Leave the last known answer alone; a dropped request is not a demotion.
+    } finally {
+      setRoleChecked(true);
+    }
   };
 
   useEffect(() => {
@@ -61,13 +71,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // The admin/manager cookie is httpOnly, so only the server can clear it —
+    // and it, not the Supabase session, is what every server-side authorisation
+    // check actually reads. Without this call "Sign out" cleared the session in
+    // localStorage and left a working admin cookie on the device for up to
+    // seven days: the next person to pick up the phone could open /admin.
+    // Awaited before the local reset so a failure here is not hidden by the UI
+    // already looking signed out.
+    try {
+      await fetch("/api/admin/logout", { method: "POST" });
+    } catch {
+      // Offline or the request failed. Still sign out locally, but the cookie
+      // may survive — better than trapping someone in a signed-in state.
+    }
     await supabase.auth.signOut();
     setIsAdmin(false);
     setIsManager(false);
   };
 
   return (
-    <UserContext.Provider value={{ user, loading, isAdmin, isManager, signIn, signOut }}>
+    <UserContext.Provider value={{ user, loading, isAdmin, isManager, roleChecked, signIn, signOut }}>
       {children}
     </UserContext.Provider>
   );

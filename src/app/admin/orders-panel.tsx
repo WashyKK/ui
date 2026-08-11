@@ -156,13 +156,25 @@ export default function OrdersPanel() {
             const kes = order.amount_minor ? Number(order.amount_minor) / 100 : null;
             return (
               <div key={order.id}>
+                {/* Two lines on a phone, one from sm up.
+                    As a single row the fixed columns — status pill, w-24 amount,
+                    w-20 date — came to more than a 375px screen has, so the
+                    flex-1 order number was crushed to an unreadable stub. The
+                    `sm:contents` wrapper dissolves at the breakpoint, which puts
+                    the three back on the button's own flex line for the desktop
+                    layout without duplicating any markup. */}
                 <button
                   onClick={() => setOpenId(open ? null : order.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+                  className="w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors sm:flex sm:items-center sm:gap-3"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm font-mono">
-                      {order.order_number}
+                  <div className="min-w-0 sm:flex-1">
+                    <p className="font-medium text-sm font-mono truncate">
+                      {/* Orders taken through Stripe before the canonical
+                          columns were written have no order_number. Showing the
+                          row id's tail is not a real reference, but it is
+                          something to say on the phone — better than a blank
+                          line that reads as a broken row. */}
+                      {order.order_number ?? `#${order.id.slice(-8).toUpperCase()}`}
                       {order.environment === "test" && (
                         <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground border rounded px-1 py-px font-sans">
                           test
@@ -174,15 +186,17 @@ export default function OrdersPanel() {
                       {order.po_reference ? ` · PO ${order.po_reference}` : ""}
                     </p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${TONE[STATUS_TONE[order.status]]}`}>
-                    {CUSTOMER_STATUS_LABEL[order.status]}
-                  </span>
-                  <span className="text-sm tabular-nums shrink-0 w-24 text-right">
-                    {kes ? `KSh ${kes.toLocaleString()}` : "—"}
-                  </span>
-                  <span className="text-xs text-muted-foreground shrink-0 w-20 text-right">
-                    {new Date(order.created_at).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}
-                  </span>
+                  <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:contents">
+                    <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${TONE[STATUS_TONE[order.status]]}`}>
+                      {CUSTOMER_STATUS_LABEL[order.status]}
+                    </span>
+                    <span className="text-sm tabular-nums shrink-0 ml-auto sm:ml-0 sm:w-24 sm:text-right">
+                      {kes ? `KSh ${kes.toLocaleString()}` : "—"}
+                    </span>
+                    <span className="text-xs text-muted-foreground shrink-0 sm:w-20 sm:text-right">
+                      {new Date(order.created_at).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}
+                    </span>
+                  </div>
                 </button>
 
                 {open && (

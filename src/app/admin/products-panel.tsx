@@ -272,7 +272,9 @@ export default function ProductsPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
+      {/* Stacks on a phone: side by side, the button took half the width and
+          wrung the description out into six lines. */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
         <div>
           <h2 className="text-lg font-semibold">Products</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -280,7 +282,7 @@ export default function ProductsPanel() {
             without touching its stock or its order history.
           </p>
         </div>
-        <Button onClick={openNew} className="gap-2 shrink-0">
+        <Button onClick={openNew} className="gap-2 shrink-0 w-full sm:w-auto">
           <Plus className="h-4 w-4" /> New product
         </Button>
       </div>
