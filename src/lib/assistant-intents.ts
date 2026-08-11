@@ -68,8 +68,25 @@ export type LocalAnswer =
 const NOT_A_LOOKUP =
   /\b(current|voltage|volts?|amp(?:s|ere)?|watt|power|draw|consumption|weigh|weight|torque|rpm|speed|length|width|height|depth|dimension|size|resistance|capacit|inductance|frequency|temperature|thermal|range|cable|wire|pin|pinout|memory|flash|ram|baud|distance|accuracy|tolerance|load|pressure|flow|duty|rating|spec|datasheet|manual|firmware|driver|library|version|variant|model|colour|color|shipping|delivery|postage|freight|warranty|return)\b/i;
 
+/** A refusal anywhere in the sentence. Cheap, and deliberately over-broad. */
+const NEGATED = /\b(don'?t|do not|didn'?t|doesn'?t|won'?t|never|rather not|no need|not (?:yet|now|really|going to|want)|without|cancel|remove|take (?:it )?out|no thanks|nope)\b/i;
+
 /** Words that mean "put it in the basket", as actually typed. */
-const ADD = /\b(add|put|chuck|throw|stick)\b.*\b(cart|basket|trolley|order)\b|\b(i(?:'| w)?ll take|i want to buy|buy it|order it|get me)\b/i;
+const ADD = new RegExp(
+  [
+    // "add it to my cart", "put three in the basket"
+    "\\b(add|put|chuck|throw|stick)\\b.*\\b(cart|basket|trolley|order)\\b",
+    // "I'll take two", "get me 5"
+    "\\b(i(?:'| w)?ll take|i want to buy|buy it|order it|get me)\\b",
+    // "add 3 of these" — no container word, but unmistakable. The negative
+    // lookahead keeps a component value out of it: "add 100 ohm resistor" and
+    // "add 12 V here" are questions about a circuit, not orders.
+    "\\b(?:add|buy|order)\\s+(?:me\\s+)?\\d{1,3}\\b(?!\\s*(?:v\\b|volts?|a\\b|amps?|ma\\b|w\\b|watts?|mm|cm|kg|g\\b|ohms?|k\\b|hz|rpm))",
+    // "add a couple of these"
+    "\\b(?:add|buy|order|take)\\s+(?:a |an |one |two |three |four |five |a couple (?:of )?)?(?:of )?(?:these|them|those)\\b",
+  ].join("|"),
+  "i"
+);
 
 /**
  * Deliberately narrow. Each of these has to be unmistakably about this item's
@@ -105,9 +122,27 @@ const WORD_NUMBERS: [string, number][] = [
   ["one", 1], ["an", 1], ["a", 1],
 ];
 
+/**
+ * A quantity has to sit in a quantity position.
+ *
+ * Grabbing the first number anywhere in the sentence read the part number as
+ * the count: "add the NEMA 17 to my cart" ordered seventeen of them, and
+ * because the digit search returned first it even beat an explicit word —
+ * "add one NEMA 17" also gave seventeen. Stock clamping did not save it; it
+ * capped the mistake at the whole shelf.
+ *
+ * So a number counts only when it directly follows the verb ("add 2"), or
+ * carries a counting cue ("3 of these", "5 units"). Anything else falls back to
+ * a word, then to one — and the reply always states the number it used, so a
+ * wrong guess is visible before checkout.
+ */
 function quantityIn(text: string): number {
-  const digits = text.match(/\b(\d{1,3})\b/);
-  if (digits) return Math.max(1, parseInt(digits[1], 10));
+  const afterVerb = text.match(/\b(?:add|put|take|buy|order|want|get|need)\s+(?:me\s+)?(\d{1,3})\b/i);
+  if (afterVerb) return Math.max(1, parseInt(afterVerb[1], 10));
+
+  const counted = text.match(/\b(\d{1,3})\s*(?:x\b|of\b|units?\b|pcs?\b|pieces?\b)/i);
+  if (counted) return Math.max(1, parseInt(counted[1], 10));
+
   for (const [word, n] of WORD_NUMBERS) {
     if (new RegExp(`\\b${word}\\b`, "i").test(text)) return n;
   }
@@ -129,6 +164,14 @@ export function answerLocally(
   // Suitability is a judgement call, not a lookup.
   const isJudgement = /\b(should|suitable|right for|will it|can it|compatible|instead of|better|recommend|difference|enough)\b/i.test(q);
   if (isJudgement) return null;
+
+  // A refusal must never mutate the cart. "don't add it to my cart" matched the
+  // add pattern and added it; worse, a customer correcting the mistake with
+  // "no, don't add two to my cart" got two MORE, because the cart increments an
+  // existing line. Adding to a cart is the one local answer with a side effect,
+  // so it is the one that has to fail closed. Ambiguity here goes to the model,
+  // which reads the negation correctly and will not emit the sentinel.
+  if (NEGATED.test(q)) return null;
 
   // "add 2 to my cart" is unambiguous even when it mentions a spec, so the
   // measurement guard applies to the lookups below it, not to this.

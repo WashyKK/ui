@@ -157,10 +157,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   // Only the last few turns: the context is the product, not the conversation,
   // and an unbounded history is an unbounded bill.
-  const recent = messages.slice(-6).map((m) => ({
-    role: m.role,
-    content: String(m.content).slice(0, 1000),
-  }));
+  // The role is client-supplied and was copied through verbatim, which let a
+  // crafted request POST a `system` turn — it landed immediately after the real
+  // system prompt in ai.ts and could argue with every safety rule above it.
+  // Only the two roles a conversation can legitimately contain survive.
+  const recent = messages
+    .filter((m) => m && (m.role === "user" || m.role === "assistant"))
+    .slice(-6)
+    .map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: String(m.content ?? "").slice(0, 1000),
+    }));
 
   // What people ask is a demand signal in the same way a zero-result search is.
   // Fire and forget — a logging failure must not cost someone their answer.

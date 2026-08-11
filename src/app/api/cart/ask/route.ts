@@ -84,7 +84,11 @@ export async function POST(req: Request) {
   const context = `${lines.join("\n")}\nTotal KSh ${Math.round(totalKes).toLocaleString()}, before delivery.`;
 
   try {
-    const stream = await streamChat(cartSystemPrompt(context), messages.slice(-4));
+    const safe = messages
+      .filter((m) => m && (m.role === "user" || m.role === "assistant"))
+      .slice(-4)
+      .map((m) => ({ role: m.role as "user" | "assistant", content: String(m.content ?? "").slice(0, 500) }));
+    const stream = await streamChat(cartSystemPrompt(context), safe);
     return new Response(stream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",

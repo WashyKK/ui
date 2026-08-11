@@ -110,5 +110,36 @@ for (const q of [
 t('cart "what is my total?"', answerCartLocally("what is my total?", LINES, 16, money)?.kind, "reply");
 t('cart "what\'s in my cart?"', answerCartLocally("what's in my cart?", LINES, 16, money)?.kind, "reply");
 
+
+console.log("\n— a refusal must never touch the cart —");
+for (const q of [
+  "don't add it to my cart",
+  "do not add it to my cart",
+  "no, don't add two to my cart",
+  "I don't want to buy it yet",
+  "I'd rather not order it",
+  "no need to add it",
+  "remove it from my cart",
+]) t(`"${q}"`, answerLocally(q, P, money), null);
+
+console.log("\n— a part number is not a quantity —");
+t('"add the NEMA 17 to my cart"', answerLocally("add the NEMA 17 to my cart", P, money)?.quantity, 1);
+t('"add one NEMA 17 to my cart"', answerLocally("add one NEMA 17 to my cart", P, money)?.quantity, 1);
+t('"add the LRS-350-24 to my cart"', answerLocally("add the LRS-350-24 to my cart", P, money)?.quantity, 1);
+t('"add 2 to my cart" still 2', answerLocally("add 2 to my cart", P, money)?.quantity, 2);
+t('"get me 5" still 5', answerLocally("get me 5", P, money)?.quantity, 5);
+t('"add 3 of these" still 3', answerLocally("add 3 of these", P, money)?.quantity, 3);
+t('"I\'ll take two" still 2', answerLocally("I'll take two", P, money)?.quantity, 2);
+t('"add a couple to my cart" still 2', answerLocally("add a couple to my cart", P, money)?.quantity, 2);
+
+
+// Guard the widened ADD pattern against the obvious over-reach: a component
+// value in a circuit question is not an order.
+console.log("\n— component values are not orders —");
+for (const q of ["add 100 ohm resistor here", "add 12 V to this rail", "can I add 5 V?", "add 470uF across it"]) {
+  const r = answerLocally(q, P, money);
+  t(`"${q}"`, r?.kind === "add" ? "ADDED" : "not-added", "not-added");
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
