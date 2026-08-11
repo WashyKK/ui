@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Download, ExternalLink, FileText } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Copy, Download, ExternalLink, FileText } from "lucide-react";
 
 const KIND_LABEL: Record<string, string> = {
   datasheet: "Datasheet",
@@ -96,8 +96,16 @@ export function LinkList({ links }: { links: LinkRow[] }) {
   );
 }
 
+/** Roughly 18 lines of code — enough to judge a snippet without owning the page. */
+const COLLAPSED_HEIGHT = "22rem";
+const LONG_ENOUGH_TO_COLLAPSE = 18;
+
 function CodeBlock({ snippet }: { snippet: SnippetRow }) {
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const lineCount = snippet.code.split("\n").length;
+  const isLong = lineCount > LONG_ENOUGH_TO_COLLAPSE;
 
   const copy = async () => {
     try {
@@ -118,7 +126,10 @@ function CodeBlock({ snippet }: { snippet: SnippetRow }) {
             <p className="text-xs text-muted-foreground mt-0.5">{snippet.description}</p>
           )}
         </div>
-        <span className="label-micro text-muted-foreground shrink-0">{snippet.language}</span>
+        <span className="label-micro text-muted-foreground shrink-0 tabular-nums">
+          {snippet.language}
+          {isLong && ` · ${lineCount} lines`}
+        </span>
         <button
           onClick={copy}
           aria-label={`Copy ${snippet.title}`}
@@ -127,10 +138,50 @@ function CodeBlock({ snippet }: { snippet: SnippetRow }) {
           {copied ? <Check className="h-3.5 w-3.5 text-signal" /> : <Copy className="h-3.5 w-3.5" />}
         </button>
       </div>
-      {/* Rendered as text, never as markup — this is author-supplied content. */}
-      <pre className="overflow-x-auto p-3 text-[12.5px] leading-relaxed font-mono bg-background">
-        <code>{snippet.code}</code>
-      </pre>
+      {/*
+        Scrolls inside itself rather than growing the page. A driver library or
+        a licence header can run to hundreds of lines, and letting that set the
+        page height buries everything below it — the datasheet, the related
+        parts, the buy button.
+
+        Rendered as text, never as markup: this is author-supplied content.
+      */}
+      <div className="relative">
+        <pre
+          className="overflow-auto p-3 text-[12.5px] leading-relaxed font-mono bg-background"
+          style={{ maxHeight: expanded ? "70vh" : COLLAPSED_HEIGHT }}
+          tabIndex={0}
+          aria-label={`${snippet.title} — ${lineCount} lines of ${snippet.language}`}
+        >
+          <code>{snippet.code}</code>
+        </pre>
+
+        {/* Only when collapsed: a fade, so it reads as "there is more" rather
+            than as a snippet that happens to end mid-statement. */}
+        {isLong && !expanded && (
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background to-transparent"
+            aria-hidden="true"
+          />
+        )}
+      </div>
+
+      {isLong && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full border-t px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors inline-flex items-center justify-center gap-1.5"
+        >
+          {expanded ? (
+            <>
+              <ChevronUp className="h-3 w-3" /> Collapse
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3 w-3" /> Show all {lineCount} lines
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
