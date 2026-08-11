@@ -1,3 +1,4 @@
+import "server-only";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { sendBackInStock } from "@/lib/email";
 import { absoluteUrl } from "@/lib/site";

@@ -1,3 +1,4 @@
+import "server-only";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { getShippingRate } from "@/lib/shipping";
 import { getUsdToKesRate, usdToKes } from "@/lib/fx";

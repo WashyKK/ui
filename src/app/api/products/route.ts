@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { canManageProducts } from "@/lib/auth-check";
 import { listProducts } from "@/lib/products-query";
-import { saveProductResources } from "@/lib/product-resources";
+import { saveProductResources } from "@/lib/product-resources.server";
 
 export async function GET() {
   const { data, error } = await listProducts();

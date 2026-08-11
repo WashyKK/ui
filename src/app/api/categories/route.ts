@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabaseServer";
-import { loadCategoryTree } from "@/lib/categories";
+import { loadCategoryTree } from "@/lib/categories.server";
 
 /**
  * Returns the tree in display order, each node carrying its depth and its

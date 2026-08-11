@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import TopNav from "@/components/top-nav";
 import SiteFooter from "@/components/site-footer";
 import CartDrawer from "@/components/cart-drawer";
+import AnalyticsTracker from "@/components/analytics-tracker";
 import { CartProvider } from "@/context/cart";
 import { UserProvider } from "@/context/user";
 import { CurrencyProvider } from "@/context/currency";
@@ -65,6 +66,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </main>
             <SiteFooter />
             <CartDrawer />
+            <AnalyticsTracker />
           </CartProvider>
         </UserProvider>
         </CurrencyProvider>

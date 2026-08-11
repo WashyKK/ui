@@ -14,10 +14,10 @@ import { findProductBy } from "@/lib/products-query";
 import { absoluteUrl } from "@/lib/site";
 import { getUsdToKesRate, usdToKes } from "@/lib/fx";
 import { JsonLd, breadcrumbSchema, productSchema } from "@/lib/json-ld";
-import { attributesFor } from "@/lib/attributes";
+import { attributesFor } from "@/lib/attributes.server";
 import StockAlertForm from "@/components/stock-alert-form";
 import { DocumentList, LinkList, SnippetList } from "@/components/product-resources";
-import { loadProductResources } from "@/lib/product-resources";
+import { loadProductResources } from "@/lib/product-resources.server";
 
 /** Resolve by slug or by legacy UUID — old links must keep working. */
 async function findProduct(idOrSlug: string) {

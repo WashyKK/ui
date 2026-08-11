@@ -11,6 +11,7 @@ import Products from "@/components/products";
 import SpecFilters from "@/components/spec-filters";
 import type { Facet } from "@/lib/attributes";
 import { descendantNames, type CategoryNode } from "@/lib/categories";
+import { reportSearch } from "@/components/analytics-tracker";
 
 interface StoreProps {
   initialProducts: Product[];
@@ -141,6 +142,24 @@ function StoreInner({ initialProducts, categoryTree, facets, attributeIndex }: S
     }
     return list;
   }, [products, activeCategory, categoryOptions, search, sort, facets, attributeIndex, searchParams]);
+
+  // Report the search once typing settles, not per keystroke. `filtered` is
+  // already computed, so the result count reported is the one actually shown —
+  // including zero, which is the number worth having.
+  React.useEffect(() => {
+    const term = search.trim();
+    if (term.length < 2) return;
+    const timer = setTimeout(() => {
+      reportSearch(
+        term,
+        filtered.length,
+        activeCategory === "all"
+          ? null
+          : categoryOptions.find((o) => o.id === activeCategory)?.label ?? null
+      );
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [search, filtered.length, activeCategory, categoryOptions]);
 
   return (
     <div className="space-y-6">

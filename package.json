@@ -27,6 +27,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "resend": "^6.12.2",
+    "server-only": "^0.0.1",
     "stripe": "^16.12.0",
     "tailwind-merge": "^2.5.2"
   },

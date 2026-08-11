@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { canManageProducts } from "@/lib/auth-check";
 import { notifyBackInStock } from "@/lib/stock-alerts";
-import { loadProductResources, saveProductResources } from "@/lib/product-resources";
+import { loadProductResources, saveProductResources } from "@/lib/product-resources.server";
 import { findProductBy } from "@/lib/products-query";
 
 /** One product with its four collections — what the admin sheet needs to edit. */

@@ -4,8 +4,8 @@ import { toProduct, type Product } from "@/components/types";
 import { productPath } from "@/lib/slug";
 import { SITE_DESCRIPTION } from "@/lib/site";
 import { listProducts } from "@/lib/products-query";
-import { attributeIndex, facets as loadFacets } from "@/lib/attributes";
-import { loadCategoryTree } from "@/lib/categories";
+import { attributeIndex, facets as loadFacets } from "@/lib/attributes.server";
+import { loadCategoryTree } from "@/lib/categories.server";
 import StoreClient from "./store-client";
 
 export const metadata: Metadata = {
