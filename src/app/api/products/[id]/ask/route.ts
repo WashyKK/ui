@@ -13,11 +13,37 @@ import { visitorHash, isBot } from "@/lib/analytics";
 export const dynamic = "force-dynamic";
 
 /**
- * Every call costs money, so this is capped per visitor per hour. The limit is
- * counted from the question log rather than an in-memory counter, which would
- * reset on every cold start and cap nothing.
+ * Every call costs money, so this is capped per visitor per hour.
+ *
+ * The real limit is counted from the question log: an in-memory counter resets
+ * on every cold start, so on a serverless host it caps nothing. But this is a
+ * public endpoint wired to a billed API key, and the table arrives with a
+ * migration that may not have been applied yet — so a missing table falls back
+ * to an in-memory count rather than to no limit at all. That fallback is weak
+ * by construction, and deliberately weak in the safe direction: it can let a
+ * determined attacker through after a cold start, but it cannot leave the
+ * endpoint completely uncapped.
  */
 const HOURLY_LIMIT = 20;
+
+const MEMORY_COUNTS = new Map<string, { count: number; first: number }>();
+
+function overLimitInMemory(hash: string): boolean {
+  const now = Date.now();
+  // Opportunistic sweep so a long-lived instance does not grow without bound.
+  if (MEMORY_COUNTS.size > 5000) {
+    for (const [k, v] of MEMORY_COUNTS) {
+      if (now - v.first > 3_600_000) MEMORY_COUNTS.delete(k);
+    }
+  }
+  const rec = MEMORY_COUNTS.get(hash);
+  if (!rec || now - rec.first > 3_600_000) {
+    MEMORY_COUNTS.set(hash, { count: 1, first: now });
+    return false;
+  }
+  rec.count += 1;
+  return rec.count > HOURLY_LIMIT;
+}
 
 async function overLimit(hash: string): Promise<boolean> {
   const since = new Date(Date.now() - 3_600_000).toISOString();
@@ -26,9 +52,20 @@ async function overLimit(hash: string): Promise<boolean> {
     .select("id", { count: "exact", head: true })
     .eq("visitor_hash", hash)
     .gte("created_at", since);
-  // A missing table must not lock the feature out entirely.
-  if (error) return false;
-  return (count ?? 0) >= HOURLY_LIMIT;
+
+  // A HEAD request against a table that does not exist comes back with no error
+  // AND no count: PostgREST has no response body to carry the error in. So the
+  // signal that the log is unavailable is a null count, not just an error —
+  // checking only `error` left the cap silently disabled, which is precisely
+  // the state this fallback exists to prevent.
+  if (error || count === null) {
+    console.warn(
+      "product_questions unavailable, using in-memory rate limit:",
+      error?.message ?? "no count returned (table missing?)"
+    );
+    return overLimitInMemory(hash);
+  }
+  return count >= HOURLY_LIMIT;
 }
 
 /** Everything the model is allowed to treat as fact. */

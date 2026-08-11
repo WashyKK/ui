@@ -36,10 +36,20 @@ export default function ProductAssistant({
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const latestRef = useRef<HTMLDivElement>(null);
 
+  // Bring the top of the newest exchange into view — not the bottom of the box.
+  // An answer is usually taller than the box on a phone, so scrolling to the
+  // bottom drops the reader into the middle of a sentence with the question
+  // they asked already off-screen. Keyed on turn count, not on content, so it
+  // positions once when the answer starts and then leaves the reader alone
+  // while it streams in under them.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [turns, streaming]);
+    const container = scrollRef.current;
+    const latest = latestRef.current;
+    if (!container || !latest) return;
+    container.scrollTo({ top: latest.offsetTop - container.offsetTop, behavior: "smooth" });
+  }, [turns.length]);
 
   const ask = async (question: string) => {
     const text = question.trim();
@@ -93,7 +103,12 @@ export default function ProductAssistant({
       {turns.length > 0 && (
         <div ref={scrollRef} className="max-h-96 overflow-y-auto px-4 py-4 space-y-4">
           {turns.map((turn, i) => (
-            <div key={i} className={turn.role === "user" ? "text-right" : ""}>
+            <div
+              key={i}
+              // The last question asked: where the reader should be looking.
+              ref={i === turns.length - 2 ? latestRef : undefined}
+              className={turn.role === "user" ? "text-right" : ""}
+            >
               <div
                 className={`inline-block text-sm leading-relaxed text-left max-w-[85%] ${
                   turn.role === "user"
