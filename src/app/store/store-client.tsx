@@ -10,9 +10,12 @@ import { Product, toProduct } from "@/components/types";
 import Products from "@/components/products";
 import SpecFilters from "@/components/spec-filters";
 import type { Facet } from "@/lib/attributes";
+import { descendantNames, type CategoryNode } from "@/lib/categories";
 
 interface StoreProps {
   initialProducts: Product[];
+  /** Full category tree, so a parent pill can match its children's products. */
+  categoryTree: CategoryNode[];
   facets: Facet[];
   /** productId -> { attributeKey -> values }, for filtering without a round trip. */
   attributeIndex: Record<string, Record<string, string[]>>;
@@ -25,7 +28,7 @@ const SORT_OPTIONS = [
   { value: "name", label: "Name A–Z" },
 ];
 
-function StoreInner({ initialProducts, facets, attributeIndex }: StoreProps) {
+function StoreInner({ initialProducts, categoryTree, facets, attributeIndex }: StoreProps) {
   const searchParams = useSearchParams();
   const [products, setProducts] = React.useState<Product[]>(initialProducts);
   const [loading, setLoading] = React.useState(false);
@@ -50,17 +53,46 @@ function StoreInner({ initialProducts, facets, attributeIndex }: StoreProps) {
   }, []);
 
 
-  const categories = React.useMemo(() => {
-    const cats = Array.from(
-      new Set(products.map((p) => p.category).filter(Boolean))
-    ).sort();
-    return ["all", ...cats];
-  }, [products]);
+  // Which categories to offer, and what each one means.
+  //
+  // Built from the tree rather than from distinct product names: selecting
+  // "Motors" has to match a product filed under "Stepper" three levels down,
+  // and a parent with no direct products still belongs in the list when its
+  // children have some.
+  const categoryOptions = React.useMemo(() => {
+    if (categoryTree.length === 0) {
+      // No tree (or the migration has not run) — fall back to the old behaviour.
+      const names = Array.from(new Set(products.map((p) => p.category).filter(Boolean))).sort();
+      return names.map((name) => ({
+        id: name as string,
+        label: name as string,
+        depth: 0,
+        names: [name as string],
+        total: products.filter((p) => p.category === name).length,
+      }));
+    }
+
+    const counted = new Map<string, number>();
+    for (const p of products) {
+      if (p.category) counted.set(p.category, (counted.get(p.category) ?? 0) + 1);
+    }
+
+    return categoryTree
+      .map((node) => {
+        const names = descendantNames(categoryTree, node.id);
+        const total = names.reduce((sum, n) => sum + (counted.get(n) ?? 0), 0);
+        return { id: node.id, label: node.name, depth: node.depth, names, total };
+      })
+      .filter((o) => (o.total ?? 0) > 0);
+  }, [categoryTree, products]);
 
   const filtered = React.useMemo(() => {
     let list = [...products];
-    if (activeCategory !== "all")
-      list = list.filter((p) => p.category === activeCategory);
+    if (activeCategory !== "all") {
+      const option = categoryOptions.find((o) => o.id === activeCategory);
+      const wanted = new Set(option?.names ?? [activeCategory]);
+      list = list.filter((p) => p.category && wanted.has(p.category));
+    }
     if (search.trim()) {
       // Part numbers are how buyers actually arrive — someone searching
       // "17HS4401" used to get nothing, because only name, description and
@@ -108,7 +140,7 @@ function StoreInner({ initialProducts, facets, attributeIndex }: StoreProps) {
         );
     }
     return list;
-  }, [products, activeCategory, search, sort, facets, attributeIndex, searchParams]);
+  }, [products, activeCategory, categoryOptions, search, sort, facets, attributeIndex, searchParams]);
 
   return (
     <div className="space-y-6">
@@ -192,19 +224,34 @@ function StoreInner({ initialProducts, facets, attributeIndex }: StoreProps) {
       </div>
 
       {/* Category pills */}
-      {!loading && !error && categories.length > 1 && (
-        <div className="flex gap-2 flex-wrap">
-          {categories.map((cat) => (
+      {!loading && !error && categoryOptions.length > 0 && (
+        <div className="flex gap-2 flex-wrap items-center">
+          <button
+            onClick={() => setActiveCategory("all")}
+            className={`px-3.5 py-1.5 rounded-sm text-sm transition-colors border ${
+              activeCategory === "all"
+                ? "bg-foreground text-background border-foreground"
+                : "border-border text-muted-foreground hover:text-foreground hover:border-graphite"
+            }`}
+          >
+            All products
+          </button>
+          {categoryOptions.map((option) => (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-sm text-sm transition-colors border ${
-                activeCategory === cat
+              key={option.id}
+              onClick={() => setActiveCategory(option.id)}
+              title={option.depth > 0 ? `Within ${option.label}` : undefined}
+              className={`px-3.5 py-1.5 rounded-sm text-sm transition-colors border inline-flex items-center gap-1.5 ${
+                activeCategory === option.id
                   ? "bg-foreground text-background border-foreground"
                   : "border-border text-muted-foreground hover:text-foreground hover:border-graphite"
-              }`}
+              } ${option.depth > 0 ? "text-xs" : ""}`}
             >
-              {cat === "all" ? "All products" : cat}
+              {option.depth > 0 && <span className="opacity-50 select-none">›</span>}
+              {option.label}
+              {typeof option.total === "number" && (
+                <span className="opacity-60 tabular-nums text-xs">{option.total}</span>
+              )}
             </button>
           ))}
         </div>
@@ -214,7 +261,7 @@ function StoreInner({ initialProducts, facets, attributeIndex }: StoreProps) {
       {!loading && !error && (
         <p className="text-xs text-muted-foreground -mt-2">
           {filtered.length} {filtered.length === 1 ? "product" : "products"}
-          {activeCategory !== "all" ? ` in "${activeCategory}"` : ""}
+          {activeCategory !== "all" ? ` in "${categoryOptions.find((o) => o.id === activeCategory)?.label ?? activeCategory}"` : ""}
           {search.trim() ? ` matching "${search}"` : ""}
         </p>
       )}

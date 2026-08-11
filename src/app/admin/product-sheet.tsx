@@ -21,7 +21,12 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "resources", label: "Links & code" },
 ];
 
-export interface Category { id: string; name: string }
+export interface Category {
+  id: string;
+  name: string;
+  depth?: number;
+  path?: string;
+}
 
 const field =
   "w-full rounded-sm border border-input bg-background px-3 py-2 text-sm " +
@@ -295,9 +300,17 @@ export default function ProductSheet({
               >
                 <option value="">— None —</option>
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {"\u00A0\u00A0".repeat(c.depth ?? 0)}
+                    {c.name}
+                  </option>
                 ))}
               </select>
+              {categoryId && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {categories.find((c) => c.id === categoryId)?.path ?? ""}
+                </p>
+              )}
             </div>
           </div>
 

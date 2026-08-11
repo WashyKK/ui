@@ -43,7 +43,13 @@ export default function ProductsPanel() {
     load();
     fetch("/api/categories")
       .then((r) => r.json())
-      .then((d) => setCategories(d.categories ?? []))
+      .then((d) =>
+        setCategories(
+          (d.categories ?? []).map((c: any) => ({
+            id: c.id, name: c.name, depth: c.depth ?? 0, path: c.path ?? c.name,
+          }))
+        )
+      )
       .catch(() => {});
   }, [load]);
 

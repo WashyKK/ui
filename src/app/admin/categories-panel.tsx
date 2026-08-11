@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ColDef, ICellRendererParams } from "ag-grid-community";
-import { Plus } from "lucide-react";
+import { CornerDownRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Grid from "@/components/admin/grid";
 import CategorySheet, { type CategoryRow } from "./category-sheet";
@@ -43,11 +43,21 @@ export default function CategoriesPanel() {
         }
       }
 
+      const all = (cats.categories ?? []) as any[];
+      const childCounts = new Map<string, number>();
+      for (const c of all) {
+        if (c.parent_id) childCounts.set(c.parent_id, (childCounts.get(c.parent_id) ?? 0) + 1);
+      }
+
       setRows(
-        (cats.categories ?? []).map((c: any) => ({
+        all.map((c) => ({
           id: c.id,
           name: c.name,
           description: c.description ?? null,
+          parentId: c.parent_id ?? null,
+          depth: c.depth ?? 0,
+          path: c.path ?? c.name,
+          childCount: childCounts.get(c.id) ?? 0,
           productCount:
             (byId.get(c.id) ?? 0) + (byName.get(String(c.name).toLowerCase()) ?? 0),
         }))
@@ -64,14 +74,36 @@ export default function CategoriesPanel() {
 
   const columns = useMemo<ColDef<CategoryRow>[]>(() => [
     {
-      headerName: "Name",
-      field: "name",
+      headerName: "Category",
+      field: "path",
       pinned: "left",
-      minWidth: 200,
-      flex: 1,
-      cellRenderer: (p: ICellRendererParams<CategoryRow>) => (
-        <span className="font-medium">{p.value}</span>
-      ),
+      minWidth: 280,
+      flex: 2,
+      // Sorting or filtering would scatter children away from their parents, so
+      // the tree column does neither. The path column below is searchable.
+      sortable: false,
+      valueGetter: (p) => p.data?.path ?? p.data?.name ?? "",
+      cellRenderer: (p: ICellRendererParams<CategoryRow>) => {
+        const row = p.data;
+        if (!row) return null;
+        const depth = row.depth ?? 0;
+        return (
+          <span
+            className="flex items-center gap-1.5"
+            style={{ paddingLeft: depth * 18 }}
+          >
+            {depth > 0 && (
+              <CornerDownRight className="h-3 w-3 text-muted-foreground shrink-0" />
+            )}
+            <span className={depth === 0 ? "font-medium" : ""}>{row.name}</span>
+            {(row.childCount ?? 0) > 0 && (
+              <span className="text-[10px] text-muted-foreground border rounded-sm px-1">
+                {row.childCount}
+              </span>
+            )}
+          </span>
+        );
+      },
     },
     {
       headerName: "Description",
@@ -106,8 +138,8 @@ export default function CategoriesPanel() {
         <div>
           <h2 className="text-lg font-semibold">Categories</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Click a row to edit. Renaming is safe — products filed under a
-            category follow the new name.
+            Nest them as deep as you need — Motors › DC › Stepper. Click a row to
+            edit or move it. Renaming is safe; products follow the new name.
           </p>
         </div>
         <Button
@@ -140,6 +172,7 @@ export default function CategoriesPanel() {
       <CategorySheet
         open={sheetOpen}
         category={editing}
+        tree={rows}
         onClose={() => setSheetOpen(false)}
         onSaved={load}
       />

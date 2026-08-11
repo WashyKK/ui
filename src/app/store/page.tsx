@@ -5,6 +5,7 @@ import { productPath } from "@/lib/slug";
 import { SITE_DESCRIPTION } from "@/lib/site";
 import { listProducts } from "@/lib/products-query";
 import { attributeIndex, facets as loadFacets } from "@/lib/attributes";
+import { loadCategoryTree } from "@/lib/categories";
 import StoreClient from "./store-client";
 
 export const metadata: Metadata = {
@@ -22,10 +23,11 @@ async function getProducts(): Promise<{ products: Product[]; rows: any[] }> {
 }
 
 export default async function StorePage() {
-  const [{ products, rows }, facets, attributes] = await Promise.all([
+  const [{ products, rows }, facets, attributes, categoryTree] = await Promise.all([
     getProducts(),
     loadFacets(),
     attributeIndex(),
+    loadCategoryTree(),
   ]);
 
   return (
@@ -34,6 +36,7 @@ export default async function StorePage() {
         initialProducts={products}
         facets={facets}
         attributeIndex={attributes}
+        categoryTree={categoryTree}
       />
 
       {/*

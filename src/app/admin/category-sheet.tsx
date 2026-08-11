@@ -11,24 +11,31 @@ export interface CategoryRow {
   id: string;
   name: string;
   description: string | null;
+  parentId?: string | null;
+  depth?: number;
+  path?: string;
   productCount?: number;
+  childCount?: number;
 }
 
 interface CategorySheetProps {
   open: boolean;
   /** null = create, a row = edit. */
   category: CategoryRow | null;
+  /** Every category, in tree order — the parent picker's options. */
+  tree: CategoryRow[];
   onClose: () => void;
   onSaved: () => void;
 }
 
 export default function CategorySheet({
-  open, category, onClose, onSaved,
+  open, category, tree, onClose, onSaved,
 }: CategorySheetProps) {
   const editing = Boolean(category);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [parentId, setParentId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -37,9 +44,31 @@ export default function CategorySheet({
     if (!open) return;
     setName(category?.name ?? "");
     setDescription(category?.description ?? "");
+    setParentId(category?.parentId ?? "");
     setError(null);
     setConfirmDelete(false);
   }, [open, category]);
+
+  // A category cannot be moved inside itself. The database refuses it too, but
+  // offering the option and then erroring is a worse experience than not
+  // offering it.
+  const descendantIds = (() => {
+    if (!category) return new Set<string>();
+    const out = new Set<string>([category.id]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const node of tree) {
+        if (node.parentId && out.has(node.parentId) && !out.has(node.id)) {
+          out.add(node.id);
+          grew = true;
+        }
+      }
+    }
+    return out;
+  })();
+
+  const parentOptions = tree.filter((n) => !descendantIds.has(n.id));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +80,7 @@ export default function CategorySheet({
         {
           method: editing ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: name.trim(), description }),
+          body: JSON.stringify({ name: name.trim(), description, parentId: parentId || null }),
         }
       );
       const data = await res.json().catch(() => ({}));
@@ -93,6 +122,29 @@ export default function CategorySheet({
 
         <form onSubmit={submit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           <div>
+            <Label htmlFor="c-parent">Sits under</Label>
+            <select
+              id="c-parent"
+              value={parentId}
+              onChange={(e) => setParentId(e.target.value)}
+              className="w-full h-10 rounded-sm border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">— Top level —</option>
+              {parentOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {"\u00A0\u00A0".repeat(c.depth ?? 0)}
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              {parentId
+                ? `Will appear as ${parentOptions.find((c) => c.id === parentId)?.path ?? ""} › ${name || "…"}`
+                : "A top-level category. Choose a parent to make this a sub-category."}
+            </p>
+          </div>
+
+          <div>
             <Label htmlFor="c-name">Name</Label>
             <Input
               id="c-name" required value={name}
@@ -133,6 +185,13 @@ export default function CategorySheet({
               <p className="text-sm">
                 Delete <span className="font-medium">{category?.name}</span>?
               </p>
+              {(category?.childCount ?? 0) > 0 && (
+                <p className="text-xs text-destructive">
+                  This has {category!.childCount} sub-categor
+                  {category!.childCount === 1 ? "y" : "ies"}. Move or delete those
+                  first — the delete will be refused otherwise.
+                </p>
+              )}
               {inUse && (
                 <p className="text-xs text-muted-foreground">
                   {category!.productCount} product
