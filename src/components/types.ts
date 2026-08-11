@@ -1,4 +1,5 @@
 // components/types.ts
+import { effectivePrice } from "@/lib/pricing";
 export interface ProductImage {
   url: string;
   alt?: string;
@@ -19,6 +20,11 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  /** List price before any discount. Equal to `price` when nothing is on sale. */
+  listPrice: number;
+  onSale: boolean;
+  percentOff: number | null;
+  saleEndsAt: string | null;
   stock: number;
   category: string;
   categoryId?: string;
@@ -38,11 +44,17 @@ export interface Product {
 
 /** Map a raw products row onto the client shape, in one place. */
 export function toProduct(row: any): Product {
+  const effective = effectivePrice(row);
   return {
     id: row.id,
     name: row.name,
     description: row.description ?? "",
-    price: Number(row.price),
+    // price is what they pay today; listPrice is the struck-through original.
+    price: effective.price,
+    listPrice: Number(row.price),
+    onSale: effective.onSale,
+    percentOff: effective.percentOff,
+    saleEndsAt: effective.endsAt,
     stock: Number(row.stock ?? 0),
     category: row.category ?? "",
     categoryId: row.category_id ?? undefined,

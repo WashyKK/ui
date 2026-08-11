@@ -3,6 +3,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { getShippingRate } from "@/lib/shipping";
 import { getUsdToKesRate, usdToKes } from "@/lib/fx";
 import { isPurchasable } from "@/lib/product-status";
+import { priceOf } from "@/lib/pricing";
 import { decrementStock } from "@/lib/stock";
 import { sendOrderConfirmation } from "@/lib/email";
 
@@ -91,7 +92,7 @@ export async function priceCart(
 
     const { data: product, error } = await supabaseServer
       .from("products")
-      .select("id, name, price, stock, status")
+      .select("id, name, price, stock, status, sale_price, sale_starts_at, sale_ends_at")
       .eq("id", productId)
       .single();
 
@@ -107,7 +108,10 @@ export async function priceCart(
       throw new CartPricingError(`Insufficient stock for "${product.name}"`);
     }
 
-    const unitPriceUsd = Number(product.price);
+    // The discount is resolved here, server-side, from the row — never from
+    // anything the browser sent. A client that claims a sale price gets the
+    // real one.
+    const unitPriceUsd = priceOf(product as any);
     subtotalUsd += unitPriceUsd * quantity;
     items.push({ productId: product.id, name: product.name, unitPriceUsd, quantity });
   }

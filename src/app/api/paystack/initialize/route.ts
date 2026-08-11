@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { initializeTransaction, isPaystackConfigured } from "@/lib/paystack";
-import { CartPricingError, generateOrderNumber, priceCart } from "@/lib/orders";
+import { CartPricingError, generateOrderNumber, priceCart, settleOrder } from "@/lib/orders";
 import { getShippingLabel } from "@/lib/shipping";
 import { isDomesticZone, isValidKraPin, normalizeKenyanPhone } from "@/lib/kenya";
+import { GiftCardError, redeemGiftCard } from "@/lib/gift-cards";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,11 @@ export async function POST(req: Request) {
   }
 
   const orderNumber = await generateOrderNumber();
+
+  // Gift card, applied to the server's own total — never to an amount the
+  // browser supplied. The card is charged only after the order row exists, so a
+  // failure between the two cannot spend credit against nothing.
+  const dueMinor = priced.totalKes * 100;
   // Paystack requires the reference to be unique per transaction. Reusing the
   // order number keeps support conversations to a single identifier.
   const reference = orderNumber;
@@ -69,7 +75,7 @@ export async function POST(req: Request) {
     provider_ref: reference,
     status: "pending",
     currency: "KES",
-    amount_minor: priced.totalKes * 100,
+    amount_minor: dueMinor,
     subtotal_usd: priced.subtotalUsd,
     shipping_usd: priced.shippingUsd,
     fx_rate_usd_kes: priced.fxRate,
@@ -103,13 +109,48 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Could not create the order" }, { status: 500 });
   }
 
+  // Redeem after the order exists, so the ledger entry has an order number to
+  // point at and a refund can find it.
+  let giftMinor = 0;
+  let giftCode: string | null = null;
+  if (body.giftCardCode) {
+    try {
+      const result = await redeemGiftCard(String(body.giftCardCode), dueMinor, orderNumber);
+      giftMinor = result.appliedMinor;
+      giftCode = String(body.giftCardCode).trim().toUpperCase();
+      await supabaseServer
+        .from("orders")
+        .update({ gift_card_minor: giftMinor, gift_card_code: giftCode })
+        .eq("order_number", orderNumber);
+    } catch (err: any) {
+      // A bad card must not silently become a full-price charge.
+      await supabaseServer.from("orders").delete().eq("order_number", orderNumber);
+      const status = err instanceof GiftCardError ? err.status : 500;
+      return NextResponse.json({ error: err.message ?? "Gift card failed" }, { status });
+    }
+  }
+
+  const remainingMinor = Math.max(0, dueMinor - giftMinor);
+
+  // Credit covered the whole order: nothing to charge, so settle it here rather
+  // than sending someone to a payment page for KSh 0.
+  if (remainingMinor === 0) {
+    await settleOrder(orderNumber, { channel: "gift_card", receipt: giftCode });
+    return NextResponse.json({
+      orderNumber,
+      paidWithCredit: true,
+      giftCardMinor: giftMinor,
+      redirectTo: `/order/${orderNumber}`,
+    });
+  }
+
   const origin = new URL(req.url).origin;
 
   try {
     const { authorizationUrl } = await initializeTransaction({
       email,
       phone,
-      amountMinor: priced.totalKes * 100,
+      amountMinor: remainingMinor,
       currency: "KES",
       reference,
       callbackUrl: `${origin}/order/${orderNumber}`,
@@ -125,6 +166,8 @@ export async function POST(req: Request) {
       orderNumber,
       totalKes: priced.totalKes,
       totalUsd: priced.totalUsd,
+      giftCardMinor: giftMinor,
+      dueMinor: remainingMinor,
     });
   } catch (err: any) {
     await supabaseServer

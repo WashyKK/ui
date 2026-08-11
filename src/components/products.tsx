@@ -7,6 +7,7 @@ import { X, Package, AlertCircle, Lock, FileText } from "lucide-react";
 import { Product } from "@/components/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PriceDisplay } from "@/components/price-display";
 import AddToCartButton from "@/components/add-to-cart-button";
 import { useCurrency } from "@/context/currency";
 
@@ -186,8 +187,13 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                         <p className="text-xs text-muted-foreground mt-0.5">{product.category}</p>
                       )}
                     </div>
-                    <span className="text-lg font-bold shrink-0 tabular-nums">
-                      {format(product.price)}
+                    <span className="shrink-0">
+                      <PriceDisplay
+                        usd={product.price}
+                        wasUsd={product.onSale ? product.listPrice : null}
+                        percentOff={product.percentOff}
+                        className="text-lg font-bold tabular-nums"
+                      />
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -254,8 +260,13 @@ const Products: React.FC<Props> = ({ products, loading, error, view = "grid", on
                   {product.description}
                 </p>
                 <div className="flex items-center justify-between pt-2">
-                  <span className="text-xl font-bold tabular-nums">
-                    {format(product.price)}
+                  <span>
+                    <PriceDisplay
+                      usd={product.price}
+                      wasUsd={product.onSale ? product.listPrice : null}
+                      percentOff={product.percentOff}
+                      className="text-xl font-bold tabular-nums"
+                    />
                   </span>
                   <div className="flex items-center gap-3">
                     {product.datasheetUrl && (

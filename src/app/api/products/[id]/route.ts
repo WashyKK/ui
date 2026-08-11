@@ -37,6 +37,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (body.status !== undefined && PRODUCT_STATUSES.includes(body.status)) {
     update.status = body.status;
   }
+  if (body.salePrice !== undefined) {
+    update.sale_price = body.salePrice === null || body.salePrice === "" ? null : Number(body.salePrice);
+    // Clearing the discount clears its window too, so a removed sale cannot be
+    // resurrected by an orphaned end date.
+    if (update.sale_price === null) update.sale_ends_at = null;
+  }
+  if (body.saleEndsAt !== undefined) update.sale_ends_at = body.saleEndsAt || null;
   if (body.sku !== undefined) update.sku = String(body.sku).trim() || null;
   if (body.mpn !== undefined) update.mpn = String(body.mpn).trim() || null;
   if (body.manufacturer !== undefined) {
@@ -67,6 +74,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json(
         { error: "Listing status needs supabase/product_status.sql applied first." },
         { status: 409 }
+      );
+    }
+    if (/sale_price|sale_ends_at/i.test(error.message)) {
+      return NextResponse.json(
+        { error: "Discounts need supabase/discounts.sql applied first." },
+        { status: 409 }
+      );
+    }
+    if (error.code === "23514" && /sale_price/i.test(error.message ?? "")) {
+      return NextResponse.json(
+        { error: "The sale price has to be below the normal price." },
+        { status: 400 }
       );
     }
     return NextResponse.json({ error: error.message }, { status: 500 });

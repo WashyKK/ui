@@ -66,6 +66,8 @@ export default function ProductSheet({
   const [mpn, setMpn] = useState("");
   const [sku, setSku] = useState("");
   const [manufacturer, setManufacturer] = useState("");
+  const [salePrice, setSalePrice] = useState("");
+  const [saleEndsAt, setSaleEndsAt] = useState("");
   const [tab, setTab] = useState<Tab>("details");
   const [images, setImages] = useState<ProductImageInput[]>([]);
   const [documents, setDocuments] = useState<ProductDocumentInput[]>([]);
@@ -96,6 +98,8 @@ export default function ProductSheet({
     setMpn(product?.mpn ?? "");
     setSku(product?.sku ?? "");
     setManufacturer(product?.manufacturer ?? "");
+    setSalePrice(product?.sale_price != null ? String(product.sale_price) : "");
+    setSaleEndsAt(product?.sale_ends_at ? String(product.sale_ends_at).slice(0, 10) : "");
     setError(null);
     setConfirmDelete(false);
     setTab("details");
@@ -157,6 +161,8 @@ export default function ProductSheet({
         category: categories.find((c) => c.id === categoryId)?.name ?? "",
         mpn, sku, manufacturer,
         status,
+        salePrice: salePrice.trim() === "" ? null : Number(salePrice),
+        saleEndsAt: saleEndsAt || null,
         imageUrl: primaryImage,
         datasheetUrl: primaryDoc,
         images, documents, links, snippets,
@@ -339,6 +345,38 @@ export default function ProductSheet({
                   Saving will email anyone waiting on this part.
                 </p>
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="p-sale">Sale price (USD)</Label>
+              <Input
+                id="p-sale" type="number" step="0.01" min="0"
+                value={salePrice} onChange={(e) => setSalePrice(e.target.value)}
+                placeholder="Leave blank for no discount"
+              />
+              {salePrice && Number(salePrice) >= Number(price || 0) && (
+                <p className="text-xs text-destructive mt-1">
+                  Must be below the price to be a discount.
+                </p>
+              )}
+              {salePrice && Number(salePrice) < Number(price || 0) && (
+                <p className="text-xs text-signal mt-1">
+                  {Math.round(((Number(price) - Number(salePrice)) / Number(price)) * 100)}% off
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="p-sale-ends">Sale ends</Label>
+              <Input
+                id="p-sale-ends" type="date"
+                value={saleEndsAt} onChange={(e) => setSaleEndsAt(e.target.value)}
+                disabled={!salePrice}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Optional — blank runs until you remove the sale price.
+              </p>
             </div>
           </div>
 

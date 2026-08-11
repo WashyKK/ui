@@ -52,6 +52,12 @@ export async function POST(req: Request) {
     name,
     email,
     message,
+    // Sourcing details, when the form collected them. A quote that arrives with
+    // a part number and a quantity can be answered with a price instead of four
+    // follow-up questions.
+    part_number: String(body.partNumber ?? "").trim().slice(0, 120) || null,
+    quantity: Number(body.quantity) > 0 ? Math.floor(Number(body.quantity)) : null,
+    needed_by: body.neededBy || null,
     phone: String(body.phone ?? "").trim().slice(0, 40) || null,
     company: String(body.company ?? "").trim().slice(0, 160) || null,
     subject: String(body.subject ?? "").trim().slice(0, 200) || null,

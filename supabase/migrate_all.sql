@@ -1067,3 +1067,292 @@ $$;
 revoke all on function public.prune_analytics(integer) from public, anon, authenticated;
 grant execute on function public.prune_analytics(integer) to service_role;
 
+-- =============================================================================
+-- discounts.sql
+-- =============================================================================
+-- Per-product discounts.
+--
+-- A sale price rather than a percentage, because a shop sets "this is now
+-- KSh 2,400", not "this is now 17.4% off" — and storing the percentage means
+-- the actual price moves whenever the list price is edited, which is never what
+-- was meant. The percentage shown to the customer is derived for display only.
+--
+-- Prices here are USD, matching products.price. What the customer pays is
+-- converted to KES at checkout by the same rate as everything else.
+
+alter table public.products
+  add column if not exists sale_price     numeric(12,2),
+  add column if not exists sale_starts_at timestamptz,
+  add column if not exists sale_ends_at   timestamptz;
+
+-- A sale that is not cheaper is not a sale, and a negative price would be a
+-- refund. Both are rejected at the database rather than trusted from a form.
+alter table public.products
+  drop constraint if exists products_sale_price_check,
+  add constraint products_sale_price_check
+    check (sale_price is null or (sale_price >= 0 and sale_price < price));
+
+alter table public.products
+  drop constraint if exists products_sale_window_check,
+  add constraint products_sale_window_check
+    check (sale_starts_at is null or sale_ends_at is null or sale_ends_at > sale_starts_at);
+
+comment on column public.products.sale_price is
+  'Discounted price in USD. Active only inside the sale window; the window bounds are optional and open-ended when null.';
+
+-- Partial index: the storefront asks "what is on sale" far more often than it
+-- touches the other 95% of rows.
+create index if not exists products_on_sale_idx
+  on public.products (sale_ends_at) where sale_price is not null;
+
+-- =============================================================================
+-- sourcing_requests.sql
+-- =============================================================================
+-- Requests for parts that are not in the catalogue.
+--
+-- These already arrive through /contact as kind = 'quote', but a message in a
+-- table nobody works through is a lead that quietly ages out. This turns them
+-- into a pipeline with a status, and adds the fields a sourcing conversation
+-- actually needs — part number, quantity, what they hoped to pay, when they
+-- need it — so the first reply can be a price rather than four questions.
+
+alter table public.contact_messages
+  add column if not exists status        text not null default 'new',
+  add column if not exists part_number   text,
+  add column if not exists quantity      integer,
+  add column if not exists target_price  numeric(12,2),
+  add column if not exists needed_by     date,
+  add column if not exists quoted_minor  bigint,
+  add column if not exists quoted_at     timestamptz,
+  add column if not exists lead_time     text,
+  add column if not exists admin_notes   text,
+  add column if not exists handled_by    text,
+  add column if not exists updated_at    timestamptz not null default now();
+
+alter table public.contact_messages
+  drop constraint if exists contact_messages_status_check,
+  add constraint contact_messages_status_check check (status in (
+    'new',        -- just arrived
+    'sourcing',   -- asking suppliers
+    'quoted',     -- price and lead time sent
+    'ordered',    -- they accepted, it is on the way
+    'declined',   -- we cannot source it
+    'closed'      -- resolved or gone quiet
+  ));
+
+-- The old boolean is redundant now that status carries the state; keep it in
+-- step so anything still reading it does not go stale.
+update public.contact_messages
+   set status = case when handled then 'closed' else status end
+ where handled = true and status = 'new';
+
+create index if not exists contact_messages_status_idx
+  on public.contact_messages (status, created_at desc);
+create index if not exists contact_messages_open_idx
+  on public.contact_messages (created_at desc)
+  where status in ('new', 'sourcing', 'quoted');
+
+-- Searches that found nothing are the same signal arriving anonymously. This
+-- view puts both in one place so the admin works one list.
+create or replace view public.demand_signals as
+  select
+    'request'::text                     as source,
+    c.id::text                          as id,
+    coalesce(c.part_number, c.subject, left(c.message, 80)) as term,
+    c.status                            as status,
+    c.email                             as email,
+    c.quantity                          as quantity,
+    c.created_at                        as created_at
+  from public.contact_messages c
+  where c.kind = 'quote';
+
+grant select on public.demand_signals to service_role;
+
+-- =============================================================================
+-- gift_cards.sql
+-- =============================================================================
+-- Gift cards and store credit.
+--
+-- This is money, so the shape is a ledger with a cached balance, not a balance
+-- someone edits. Every movement is a row; the balance is what the rows add up
+-- to. That way a disputed card can be explained rather than guessed at.
+--
+-- Amounts are KES minor units (cents), integer. Never floats — a float balance
+-- drifts, and drifting money is the one bug you cannot apologise your way out
+-- of. KSh 1,000 is stored as 100000.
+
+create table if not exists public.gift_cards (
+  id             uuid primary key default gen_random_uuid(),
+  -- Shown to the customer. Unguessable: generated from 20 random bits per
+  -- character, not from a counter or a timestamp.
+  code           text not null,
+  initial_minor  bigint not null check (initial_minor > 0),
+  balance_minor  bigint not null check (balance_minor >= 0),
+  currency       text not null default 'KES',
+  status         text not null default 'active',
+  issued_to      text,
+  note           text,
+  issued_by      text,
+  expires_at     timestamptz,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+alter table public.gift_cards
+  drop constraint if exists gift_cards_status_check,
+  add constraint gift_cards_status_check check (status in ('active', 'disabled', 'expired'));
+
+-- Balance can never exceed what was issued.
+alter table public.gift_cards
+  drop constraint if exists gift_cards_balance_bound,
+  add constraint gift_cards_balance_bound check (balance_minor <= initial_minor);
+
+create unique index if not exists gift_cards_code_key on public.gift_cards (upper(code));
+create index if not exists gift_cards_status_idx on public.gift_cards (status);
+
+-- The ledger. Every issue, redemption, refund and adjustment.
+create table if not exists public.gift_card_transactions (
+  id            uuid primary key default gen_random_uuid(),
+  gift_card_id  uuid not null references public.gift_cards(id) on delete cascade,
+  kind          text not null,
+  -- Signed: negative spends, positive returns.
+  amount_minor  bigint not null,
+  balance_after bigint not null,
+  order_number  text,
+  actor         text,
+  created_at    timestamptz not null default now()
+);
+
+alter table public.gift_card_transactions
+  drop constraint if exists gift_card_transactions_kind_check,
+  add constraint gift_card_transactions_kind_check
+    check (kind in ('issue', 'redeem', 'refund', 'adjust', 'void'));
+
+create index if not exists gift_card_tx_card_idx
+  on public.gift_card_transactions (gift_card_id, created_at desc);
+create index if not exists gift_card_tx_order_idx
+  on public.gift_card_transactions (order_number) where order_number is not null;
+
+-- What an order had paid by credit, so a refund knows how much to put back.
+alter table public.orders
+  add column if not exists gift_card_minor bigint not null default 0,
+  add column if not exists gift_card_code  text;
+
+alter table public.gift_cards enable row level security;
+alter table public.gift_card_transactions enable row level security;
+
+-- Nothing about gift cards is readable from the browser. A card's balance is
+-- only ever revealed through a route handler that was given the code.
+drop policy if exists gift_cards_no_select on public.gift_cards;
+create policy gift_cards_no_select on public.gift_cards for select using (false);
+drop policy if exists gift_card_tx_no_select on public.gift_card_transactions;
+create policy gift_card_tx_no_select on public.gift_card_transactions for select using (false);
+
+-- ---------------------------------------------------------------------------
+-- Redemption.
+--
+-- The whole reason this is a database function rather than application code:
+-- SELECT ... FOR UPDATE takes a row lock, so two checkouts racing on the same
+-- card serialise instead of both reading the same balance and both spending it.
+-- Doing this in TypeScript — read balance, subtract, write back — is the
+-- classic double-spend, and with a gift card it is somebody else's money.
+--
+-- Returns the amount actually applied, which may be less than requested when
+-- the card cannot cover the whole order.
+-- ---------------------------------------------------------------------------
+create or replace function public.redeem_gift_card(
+  p_code         text,
+  p_amount_minor bigint,
+  p_order_number text
+)
+returns table (applied_minor bigint, balance_after bigint, card_id uuid)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  card    gift_cards%rowtype;
+  applied bigint;
+begin
+  if p_amount_minor is null or p_amount_minor <= 0 then
+    raise exception 'Redemption amount must be positive';
+  end if;
+
+  select * into card
+    from gift_cards
+   where upper(code) = upper(trim(p_code))
+   for update;                              -- the lock that makes this safe
+
+  if not found then
+    raise exception 'No such gift card';
+  end if;
+  if card.status <> 'active' then
+    raise exception 'That gift card is %', card.status;
+  end if;
+  if card.expires_at is not null and card.expires_at < now() then
+    update gift_cards set status = 'expired', updated_at = now() where id = card.id;
+    raise exception 'That gift card has expired';
+  end if;
+  if card.balance_minor <= 0 then
+    raise exception 'That gift card has no balance left';
+  end if;
+
+  -- Spend at most what is on the card.
+  applied := least(p_amount_minor, card.balance_minor);
+
+  update gift_cards
+     set balance_minor = balance_minor - applied,
+         updated_at    = now()
+   where id = card.id;
+
+  insert into gift_card_transactions
+    (gift_card_id, kind, amount_minor, balance_after, order_number)
+  values
+    (card.id, 'redeem', -applied, card.balance_minor - applied, p_order_number);
+
+  return query select applied, card.balance_minor - applied, card.id;
+end;
+$$;
+
+-- Put credit back — an order cancelled or refunded after the card was spent.
+create or replace function public.refund_gift_card(
+  p_card_id      uuid,
+  p_amount_minor bigint,
+  p_order_number text
+)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  card gift_cards%rowtype;
+  back bigint;
+begin
+  select * into card from gift_cards where id = p_card_id for update;
+  if not found then raise exception 'No such gift card'; end if;
+
+  -- Never restore more than was issued, whatever the caller claims.
+  back := least(p_amount_minor, card.initial_minor - card.balance_minor);
+  if back <= 0 then return card.balance_minor; end if;
+
+  update gift_cards
+     set balance_minor = balance_minor + back,
+         status        = case when status = 'expired' then status else 'active' end,
+         updated_at    = now()
+   where id = card.id;
+
+  insert into gift_card_transactions
+    (gift_card_id, kind, amount_minor, balance_after, order_number)
+  values
+    (card.id, 'refund', back, card.balance_minor + back, p_order_number);
+
+  return card.balance_minor + back;
+end;
+$$;
+
+revoke all on function public.redeem_gift_card(text, bigint, text) from public, anon, authenticated;
+revoke all on function public.refund_gift_card(uuid, bigint, text) from public, anon, authenticated;
+grant execute on function public.redeem_gift_card(text, bigint, text) to service_role;
+grant execute on function public.refund_gift_card(uuid, bigint, text) to service_role;
+

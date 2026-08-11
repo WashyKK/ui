@@ -7,6 +7,8 @@ import UsersPanel from "./users-panel";
 import OrdersPanel from "./orders-panel";
 import CustomersPanel from "./customers-panel";
 import InsightsPanel from "./insights-panel";
+import RequestsPanel from "./requests-panel";
+import GiftCardsPanel from "./gift-cards-panel";
 
 interface Props {
   isAdmin: boolean;
@@ -19,10 +21,12 @@ export default function AdminTabs({ isAdmin }: Props) {
 
   const tabs = [
     { id: "orders", label: "Orders" },
+    { id: "requests", label: "Requests" },
     { id: "products", label: "Products" },
     ...(isAdmin ? [{ id: "categories", label: "Categories" }] : []),
     ...(isAdmin ? [{ id: "users", label: "People" }] : []),
     ...(isAdmin ? [{ id: "customers", label: "Customers" }] : []),
+    ...(isAdmin ? [{ id: "giftcards", label: "Gift cards" }] : []),
     ...(isAdmin ? [{ id: "insights", label: "Insights" }] : []),
   ];
 
@@ -46,10 +50,12 @@ export default function AdminTabs({ isAdmin }: Props) {
       </div>
 
       {active === "orders" && <OrdersPanel />}
+      {active === "requests" && <RequestsPanel />}
       {active === "products" && <ProductsPanel />}
       {active === "categories" && isAdmin && <CategoriesPanel />}
       {active === "users" && isAdmin && <UsersPanel />}
       {active === "customers" && isAdmin && <CustomersPanel />}
+      {active === "giftcards" && isAdmin && <GiftCardsPanel />}
       {active === "insights" && isAdmin && <InsightsPanel />}
     </div>
   );

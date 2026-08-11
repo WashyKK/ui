@@ -66,6 +66,10 @@ export default function CheckoutForm({ paystackEnabled }: { paystackEnabled: boo
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mpesa, setMpesa] = useState<MpesaState>({ step: "idle" });
+  const [giftCode, setGiftCode] = useState("");
+  const [giftCard, setGiftCard] = useState<{ code: string; balanceMinor: number } | null>(null);
+  const [giftError, setGiftError] = useState<string | null>(null);
+  const [checkingGift, setCheckingGift] = useState(false);
 
   useEffect(() => {
     if (user?.email && !email) setEmail(user.email);
@@ -91,6 +95,31 @@ export default function CheckoutForm({ paystackEnabled }: { paystackEnabled: boo
 
   const ready = problems.length === 0 && items.length > 0;
 
+  // Credit is applied server-side against the server's own total; this is only
+  // so the customer can see what they will actually pay before committing.
+  const giftAppliedKes = giftCard ? Math.min(giftCard.balanceMinor / 100, totalKes) : 0;
+  const dueKes = Math.max(0, totalKes - giftAppliedKes);
+
+  const checkGiftCard = async () => {
+    setCheckingGift(true);
+    setGiftError(null);
+    try {
+      const res = await fetch("/api/gift-cards/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: giftCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not check that card");
+      setGiftCard({ code: data.code, balanceMinor: data.balanceMinor });
+    } catch (err: any) {
+      setGiftError(err.message);
+      setGiftCard(null);
+    } finally {
+      setCheckingGift(false);
+    }
+  };
+
   const payload = () => ({
     items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
     email: email.trim(),
@@ -104,6 +133,7 @@ export default function CheckoutForm({ paystackEnabled }: { paystackEnabled: boo
       line1, city, state, postcode, country,
     },
     business: { companyName, kraPin, poReference },
+    giftCardCode: giftCard?.code ?? undefined,
   });
 
   const handlePaystack = async () => {
@@ -125,6 +155,12 @@ export default function CheckoutForm({ paystackEnabled }: { paystackEnabled: boo
         LAST_ORDER_KEY,
         JSON.stringify({ orderNumber: data.orderNumber, email: email.trim() })
       );
+      // Credit covered the whole order: no payment page to visit.
+      if (data.paidWithCredit && data.redirectTo) {
+        clearCart();
+        window.location.assign(data.redirectTo);
+        return;
+      }
       window.location.assign(data.authorizationUrl);
     } catch (err: any) {
       setError(err.message);
@@ -408,9 +444,63 @@ export default function CheckoutForm({ paystackEnabled }: { paystackEnabled: boo
             <div className="flex justify-between font-semibold pt-1.5 border-t">
               <span>Total</span><span className="tabular-nums">{format(orderTotal)}</span>
             </div>
+            {giftAppliedKes > 0 && (
+              <div className="flex justify-between text-signal pt-1">
+                <span>Gift card</span>
+                <span className="tabular-nums">− KSh {giftAppliedKes.toLocaleString()}</span>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground text-right">
-              Charged as KSh {totalKes.toLocaleString()}
+              {giftAppliedKes > 0
+                ? dueKes === 0
+                  ? "Covered in full by credit — nothing to pay"
+                  : `KSh ${dueKes.toLocaleString()} to pay`
+                : `Charged as KSh ${totalKes.toLocaleString()}`}
             </p>
+          </div>
+
+          <div className="pt-3 border-t space-y-2">
+            {giftCard ? (
+              <div className="rounded-sm border p-3 space-y-1.5">
+                <p className="text-sm flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs truncate">{giftCard.code}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setGiftCard(null); setGiftCode(""); }}
+                    className="text-xs text-muted-foreground hover:text-destructive shrink-0"
+                  >
+                    Remove
+                  </button>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  KSh {giftAppliedKes.toLocaleString()} applied
+                  {giftCard.balanceMinor / 100 > giftAppliedKes &&
+                    ` · KSh ${(giftCard.balanceMinor / 100 - giftAppliedKes).toLocaleString()} left on the card`}
+                </p>
+              </div>
+            ) : (
+              <>
+                <label className={labelCls} htmlFor="gift">Gift card or store credit</label>
+                <div className="flex gap-2">
+                  <input
+                    id="gift"
+                    value={giftCode}
+                    onChange={(e) => setGiftCode(e.target.value.toUpperCase())}
+                    placeholder="EG-XXXX-XXXX-XXXX-XXXX"
+                    className={`${field} font-mono text-xs`}
+                  />
+                  <Button
+                    type="button" variant="outline" size="sm"
+                    onClick={checkGiftCard}
+                    disabled={checkingGift || giftCode.trim().length < 4}
+                    className="shrink-0 h-10"
+                  >
+                    {checkingGift ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                  </Button>
+                </div>
+                {giftError && <p className="text-xs text-destructive">{giftError}</p>}
+              </>
+            )}
           </div>
 
           <label className="flex gap-2.5 items-start text-xs text-muted-foreground cursor-pointer">
@@ -441,7 +531,11 @@ export default function CheckoutForm({ paystackEnabled }: { paystackEnabled: boo
           {paystackEnabled ? (
             <Button className="w-full gap-2" disabled={!ready || submitting} onClick={handlePaystack}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-              {submitting ? "Opening payment…" : `Pay KSh ${totalKes.toLocaleString()}`}
+              {submitting
+                ? "Opening payment…"
+                : dueKes === 0
+                  ? "Place order with credit"
+                  : `Pay KSh ${dueKes.toLocaleString()}`}
             </Button>
           ) : (
             <div className="space-y-3">

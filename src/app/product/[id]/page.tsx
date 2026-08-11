@@ -159,6 +159,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       ? [{ url: product.datasheetUrl, title: "Datasheet", kind: "datasheet" }]
       : [];
 
+  // JSON-LD advertises what is charged today; a stale list price here would
+  // be a price mismatch in search results.
   const kesPrice = usdToKes(product.price, getUsdToKesRate());
 
   return (
@@ -203,7 +205,12 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             )}
             <h1 className="display-headline text-3xl sm:text-4xl">{product.name}</h1>
             <div className="flex items-center gap-3 flex-wrap">
-              <PriceDisplay usd={product.price} className="text-3xl font-semibold tabular-nums" />
+              <PriceDisplay
+                usd={product.price}
+                wasUsd={product.onSale ? product.listPrice : null}
+                percentOff={product.percentOff}
+                className="text-3xl font-semibold tabular-nums"
+              />
               <StockBadge stock={product.stock} />
             </div>
           </div>
