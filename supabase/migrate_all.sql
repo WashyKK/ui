@@ -1,12 +1,36 @@
--- Elffie store — all pending migrations, in dependency order.
--- Generated from the individual files in supabase/. Safe to re-run:
--- every statement is idempotent (if not exists / or replace / drop-then-create).
+-- =============================================================================
+-- elffie store — all migrations, in dependency order.
 --
--- Paste into the Supabase SQL editor and run once.
+-- Safe to run as one script, and safe to re-run: every statement is idempotent
+-- (create ... if not exists, create or replace, drop-then-create, and inserts
+-- guarded by on conflict / not exists). Re-applying one that has already been
+-- run is a no-op, so you do not need to know which of these you have done.
+--
+-- Paste the whole file into the Supabase SQL editor and run it once.
+--
+-- Order matters in two places:
+--   catalog_depth  before  product_slugs   (slugs are built from mpn)
+--   category_tree  before  nothing, but it adds categories.parent_id
+--
+-- What each one gives you:
+--   decrement_stock        atomic stock updates; fixes a lost-update race
+--   environment_column     tags existing orders as test data before real keys
+--   orders_canonical       one order model: order_number, status, items
+--   orders_fulfilment      Kenyan delivery address, B2B fields, order_events
+--   contact_messages       quote and support enquiries
+--   catalog_depth          sku/mpn, product_images, category_id, relations
+--   product_slugs          readable product URLs + full-text search index
+--   alerts_and_attributes  back-in-stock alerts, spec attributes for faceting
+--   platform_admins        lets user_roles hold 'admin'
+--   category_tree          sub-categories: Motors > DC > Stepper
+--   product_resources      multiple PDFs, helpful links, code snippets
+--   product_status         listed / unlisted / archived
+--   analytics              cookieless page views and search events
+-- =============================================================================
 
--- ===========================================================================
+-- =============================================================================
 -- decrement_stock.sql
--- ===========================================================================
+-- =============================================================================
 -- Atomic stock decrement.
 --
 -- Replaces a read-then-write in the payment handlers: two orders landing at the
@@ -51,10 +75,9 @@ $$;
 revoke all on function public.decrement_stock(uuid, integer) from public, anon, authenticated;
 grant execute on function public.decrement_stock(uuid, integer) to service_role;
 
-
--- ===========================================================================
+-- =============================================================================
 -- environment_column.sql
--- ===========================================================================
+-- =============================================================================
 -- Tag every order with the payment environment that produced it.
 --
 -- Everything in these tables today came from M-Pesa sandbox and Stripe test keys,
@@ -83,10 +106,9 @@ create index if not exists mpesa_orders_environment_idx on mpesa_orders (environ
 --   alter table orders       alter column environment set default 'live';
 --   alter table mpesa_orders alter column environment set default 'live';
 
-
--- ===========================================================================
+-- =============================================================================
 -- orders_canonical.sql
--- ===========================================================================
+-- =============================================================================
 -- One order model.
 --
 -- Today an order can live in either of two tables with incompatible shapes:
@@ -167,10 +189,9 @@ update public.orders
 -- that has already checked who is asking.
 alter table public.orders enable row level security;
 
-
--- ===========================================================================
+-- =============================================================================
 -- orders_fulfilment.sql
--- ===========================================================================
+-- =============================================================================
 -- Everything needed to actually pack and dispatch an order.
 --
 -- Until now checkout collected an email, a shipping zone and a phone number.
@@ -230,10 +251,9 @@ alter table public.order_events enable row level security;
 drop policy if exists order_events_no_select on public.order_events;
 create policy order_events_no_select on public.order_events for select using (false);
 
-
--- ===========================================================================
+-- =============================================================================
 -- contact_messages.sql
--- ===========================================================================
+-- =============================================================================
 -- Quote requests and support enquiries.
 --
 -- The only lead form on the site built a mailto: link to a personal Gmail
@@ -270,10 +290,9 @@ alter table public.contact_messages enable row level security;
 drop policy if exists contact_messages_no_select on public.contact_messages;
 create policy contact_messages_no_select on public.contact_messages for select using (false);
 
-
--- ===========================================================================
+-- =============================================================================
 -- catalog_depth.sql
--- ===========================================================================
+-- =============================================================================
 -- Catalogue depth: part numbers, multiple images, real categories, relations.
 
 -- ---------------------------------------------------------------------------
@@ -412,10 +431,9 @@ alter table public.product_relations enable row level security;
 drop policy if exists product_relations_select_all on public.product_relations;
 create policy product_relations_select_all on public.product_relations for select using (true);
 
-
--- ===========================================================================
+-- =============================================================================
 -- product_slugs.sql
--- ===========================================================================
+-- =============================================================================
 -- Human-readable product URLs.
 --
 -- Products have always been addressed by UUID — /product/1f0c…-…. Those links
@@ -513,10 +531,9 @@ create index if not exists products_search_idx
     )
   );
 
-
--- ===========================================================================
+-- =============================================================================
 -- alerts_and_attributes.sql
--- ===========================================================================
+-- =============================================================================
 -- ---------------------------------------------------------------------------
 -- Back-in-stock alerts
 --
@@ -603,118 +620,41 @@ insert into public.attribute_keys (key, label, unit, position) values
   ('certification',    'Certification',       null, 120)
 on conflict (key) do nothing;
 
-
--- ===========================================================================
--- product_resources.sql
--- ===========================================================================
--- Everything a technical buyer needs on a product page beyond one photo and one PDF.
+-- =============================================================================
+-- platform_admins.sql
+-- =============================================================================
+-- Platform admins.
 --
--- product_images already exists (catalog_depth.sql). This adds the other three
--- collections: multiple titled documents, links to useful resources, and code
--- snippets showing how to actually drive the part.
+-- Admin access has been a single address in the ADMIN_EMAIL environment
+-- variable: one person, changeable only by editing Vercel config and
+-- redeploying, and unrecoverable if that account is lost. `user_roles` already
+-- carried store managers, but its check constraint rejected 'admin'.
 --
--- In each case the existing single column stays as the primary — image_url is
--- the thumbnail, datasheet_url is the headline datasheet — so nothing that
--- reads them breaks and the grid still has one image and one PDF to show.
+-- Widening it lets admins be granted from the admin panel like any other role.
+-- ADMIN_EMAIL keeps working as the bootstrap owner, so there is always one
+-- account that cannot be locked out by a mistake in this table.
 
--- ---------------------------------------------------------------------------
--- Documents
---
--- One datasheet is rarely the whole story: there is a datasheet, a user manual,
--- a CAD drawing, a CE/RoHS certificate, an application note. Titling them
--- matters — "PDF" tells a buyer nothing about which of the five it is.
--- ---------------------------------------------------------------------------
-create table if not exists public.product_documents (
-  id         uuid primary key default gen_random_uuid(),
-  product_id uuid not null references public.products(id) on delete cascade,
-  url        text not null,
-  title      text not null,
-  kind       text not null default 'datasheet',
-  position   integer not null default 0,
-  created_at timestamptz not null default now()
-);
+alter table public.user_roles
+  drop constraint if exists user_roles_role_check,
+  add constraint user_roles_role_check check (role in ('admin', 'store_manager'));
 
-alter table public.product_documents
-  drop constraint if exists product_documents_kind_check,
-  add constraint product_documents_kind_check check (kind in (
-    'datasheet', 'manual', 'drawing', 'certificate', 'application_note', 'other'
-  ));
+-- Who granted this, and when — an admin who can appoint other admins is worth
+-- an audit trail.
+alter table public.user_roles
+  add column if not exists invited_at timestamptz not null default now(),
+  add column if not exists accepted_at timestamptz;
 
-create index if not exists product_documents_product_idx
-  on public.product_documents (product_id, position);
+comment on column public.user_roles.accepted_at is
+  'First sign-in after the grant. Null means invited but never signed in.';
 
--- ---------------------------------------------------------------------------
--- Links
---
--- The manufacturer's product page, a GitHub library, a wiring guide, a video.
--- Held separately from documents because these are not ours and are not files:
--- deleting one frees nothing, and they can rot.
--- ---------------------------------------------------------------------------
-create table if not exists public.product_links (
-  id          uuid primary key default gen_random_uuid(),
-  product_id  uuid not null references public.products(id) on delete cascade,
-  url         text not null,
-  title       text not null,
-  description text,
-  position    integer not null default 0,
-  created_at  timestamptz not null default now()
-);
+-- Grants are looked up lower-cased at sign-in, so store them that way.
+update public.user_roles set email = lower(trim(email)) where email <> lower(trim(email));
 
-create index if not exists product_links_product_idx
-  on public.product_links (product_id, position);
+create unique index if not exists user_roles_email_key on public.user_roles (email);
 
--- ---------------------------------------------------------------------------
--- Code snippets
---
--- The difference between selling a sensor and selling a sensor someone can use
--- this afternoon. A wiring snippet or a five-line read loop answers the support
--- email before it is written.
--- ---------------------------------------------------------------------------
-create table if not exists public.product_snippets (
-  id          uuid primary key default gen_random_uuid(),
-  product_id  uuid not null references public.products(id) on delete cascade,
-  title       text not null,
-  language    text not null default 'text',
-  code        text not null,
-  description text,
-  position    integer not null default 0,
-  created_at  timestamptz not null default now()
-);
-
-create index if not exists product_snippets_product_idx
-  on public.product_snippets (product_id, position);
-
--- ---------------------------------------------------------------------------
--- Read-only to the public, like products and product_images. Writes go through
--- a route handler that has already checked the caller.
--- ---------------------------------------------------------------------------
-alter table public.product_documents enable row level security;
-alter table public.product_links     enable row level security;
-alter table public.product_snippets  enable row level security;
-
-drop policy if exists product_documents_select_all on public.product_documents;
-create policy product_documents_select_all on public.product_documents for select using (true);
-
-drop policy if exists product_links_select_all on public.product_links;
-create policy product_links_select_all on public.product_links for select using (true);
-
-drop policy if exists product_snippets_select_all on public.product_snippets;
-create policy product_snippets_select_all on public.product_snippets for select using (true);
-
--- Carry the existing single datasheet across so nothing has to be re-uploaded.
-insert into public.product_documents (product_id, url, title, kind, position)
-select p.id, p.datasheet_url, 'Datasheet', 'datasheet', 0
-  from public.products p
- where p.datasheet_url is not null
-   and not exists (
-     select 1 from public.product_documents d
-      where d.product_id = p.id and d.url = p.datasheet_url
-   );
-
-
--- ===========================================================================
+-- =============================================================================
 -- category_tree.sql
--- ===========================================================================
+-- =============================================================================
 -- Sub-categories: Motors > DC > Stepper.
 --
 -- Categories were flat, which forces every distinction into the name itself
@@ -865,10 +805,181 @@ create or replace view public.category_tree as
 
 grant select on public.category_tree to anon, authenticated, service_role;
 
+-- =============================================================================
+-- product_resources.sql
+-- =============================================================================
+-- Everything a technical buyer needs on a product page beyond one photo and one PDF.
+--
+-- product_images already exists (catalog_depth.sql). This adds the other three
+-- collections: multiple titled documents, links to useful resources, and code
+-- snippets showing how to actually drive the part.
+--
+-- In each case the existing single column stays as the primary — image_url is
+-- the thumbnail, datasheet_url is the headline datasheet — so nothing that
+-- reads them breaks and the grid still has one image and one PDF to show.
 
--- ===========================================================================
+-- ---------------------------------------------------------------------------
+-- Documents
+--
+-- One datasheet is rarely the whole story: there is a datasheet, a user manual,
+-- a CAD drawing, a CE/RoHS certificate, an application note. Titling them
+-- matters — "PDF" tells a buyer nothing about which of the five it is.
+-- ---------------------------------------------------------------------------
+create table if not exists public.product_documents (
+  id         uuid primary key default gen_random_uuid(),
+  product_id uuid not null references public.products(id) on delete cascade,
+  url        text not null,
+  title      text not null,
+  kind       text not null default 'datasheet',
+  position   integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+alter table public.product_documents
+  drop constraint if exists product_documents_kind_check,
+  add constraint product_documents_kind_check check (kind in (
+    'datasheet', 'manual', 'drawing', 'certificate', 'application_note', 'other'
+  ));
+
+create index if not exists product_documents_product_idx
+  on public.product_documents (product_id, position);
+
+-- ---------------------------------------------------------------------------
+-- Links
+--
+-- The manufacturer's product page, a GitHub library, a wiring guide, a video.
+-- Held separately from documents because these are not ours and are not files:
+-- deleting one frees nothing, and they can rot.
+-- ---------------------------------------------------------------------------
+create table if not exists public.product_links (
+  id          uuid primary key default gen_random_uuid(),
+  product_id  uuid not null references public.products(id) on delete cascade,
+  url         text not null,
+  title       text not null,
+  description text,
+  position    integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists product_links_product_idx
+  on public.product_links (product_id, position);
+
+-- ---------------------------------------------------------------------------
+-- Code snippets
+--
+-- The difference between selling a sensor and selling a sensor someone can use
+-- this afternoon. A wiring snippet or a five-line read loop answers the support
+-- email before it is written.
+-- ---------------------------------------------------------------------------
+create table if not exists public.product_snippets (
+  id          uuid primary key default gen_random_uuid(),
+  product_id  uuid not null references public.products(id) on delete cascade,
+  title       text not null,
+  language    text not null default 'text',
+  code        text not null,
+  description text,
+  position    integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists product_snippets_product_idx
+  on public.product_snippets (product_id, position);
+
+-- ---------------------------------------------------------------------------
+-- Read-only to the public, like products and product_images. Writes go through
+-- a route handler that has already checked the caller.
+-- ---------------------------------------------------------------------------
+alter table public.product_documents enable row level security;
+alter table public.product_links     enable row level security;
+alter table public.product_snippets  enable row level security;
+
+drop policy if exists product_documents_select_all on public.product_documents;
+create policy product_documents_select_all on public.product_documents for select using (true);
+
+drop policy if exists product_links_select_all on public.product_links;
+create policy product_links_select_all on public.product_links for select using (true);
+
+drop policy if exists product_snippets_select_all on public.product_snippets;
+create policy product_snippets_select_all on public.product_snippets for select using (true);
+
+-- Carry the existing single datasheet across so nothing has to be re-uploaded.
+insert into public.product_documents (product_id, url, title, kind, position)
+select p.id, p.datasheet_url, 'Datasheet', 'datasheet', 0
+  from public.products p
+ where p.datasheet_url is not null
+   and not exists (
+     select 1 from public.product_documents d
+      where d.product_id = p.id and d.url = p.datasheet_url
+   );
+
+-- =============================================================================
+-- product_status.sql
+-- =============================================================================
+-- Listing status, and a way to retire a product that has been sold.
+--
+-- Deleting a product that appears on an order fails, correctly:
+--   update or delete on table "products" violates foreign key constraint
+--   "orders_product_id_fkey" on table "orders"
+--
+-- That constraint is ON DELETE RESTRICT and it should stay. An order is a
+-- record of what somebody actually bought and paid for; letting a catalogue
+-- edit rewrite it would corrupt history and break every report and receipt that
+-- reads back through it. What was missing was the thing actually wanted —
+-- taking something off the shelf without erasing it.
+--
+-- Three states, deliberately distinct from stock:
+--
+--   active    listed everywhere, buyable
+--   unlisted  off the catalogue, search and sitemap — but the direct link still
+--             works and still sells. For a part you will supply on request, or
+--             one you are not ready to promote.
+--   archived  gone. Not listed, direct link 404s, cannot be added to a cart.
+--             This is what "delete" means for anything with order history.
+--
+-- Out of stock stays a separate, temporary fact about quantity. A part can be
+-- listed and out of stock (with a back-in-stock alert), or in stock and
+-- unlisted. Conflating them would lose the back-in-stock signal.
+
+alter table public.products
+  add column if not exists status      text not null default 'active',
+  add column if not exists archived_at timestamptz;
+
+alter table public.products
+  drop constraint if exists products_status_check,
+  add constraint products_status_check check (status in ('active', 'unlisted', 'archived'));
+
+-- The catalogue reads active-only on every page, so this index carries the
+-- storefront's hottest query.
+create index if not exists products_status_idx on public.products (status)
+  where status = 'active';
+
+comment on column public.products.status is
+  'active = listed and buyable; unlisted = direct link only; archived = retired, kept for order history.';
+
+-- Stamp the moment of retirement, so "when did we stop selling this" is
+-- answerable later.
+create or replace function public.set_product_archived_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.status = 'archived' and (old.status is distinct from 'archived') then
+    new.archived_at := now();
+  elsif new.status <> 'archived' then
+    new.archived_at := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists products_archived_at on public.products;
+create trigger products_archived_at
+before update of status on public.products
+for each row execute procedure public.set_product_archived_at();
+
+-- =============================================================================
 -- analytics.sql
--- ===========================================================================
+-- =============================================================================
 -- Site visibility: who is using the store, what they look for, and what they
 -- fail to find.
 --
@@ -955,71 +1066,4 @@ $$;
 
 revoke all on function public.prune_analytics(integer) from public, anon, authenticated;
 grant execute on function public.prune_analytics(integer) to service_role;
-
-
--- ===========================================================================
--- product_status.sql
--- ===========================================================================
--- Listing status, and a way to retire a product that has been sold.
---
--- Deleting a product that appears on an order fails, correctly:
---   update or delete on table "products" violates foreign key constraint
---   "orders_product_id_fkey" on table "orders"
---
--- That constraint is ON DELETE RESTRICT and it should stay. An order is a
--- record of what somebody actually bought and paid for; letting a catalogue
--- edit rewrite it would corrupt history and break every report and receipt that
--- reads back through it. What was missing was the thing actually wanted —
--- taking something off the shelf without erasing it.
---
--- Three states, deliberately distinct from stock:
---
---   active    listed everywhere, buyable
---   unlisted  off the catalogue, search and sitemap — but the direct link still
---             works and still sells. For a part you will supply on request, or
---             one you are not ready to promote.
---   archived  gone. Not listed, direct link 404s, cannot be added to a cart.
---             This is what "delete" means for anything with order history.
---
--- Out of stock stays a separate, temporary fact about quantity. A part can be
--- listed and out of stock (with a back-in-stock alert), or in stock and
--- unlisted. Conflating them would lose the back-in-stock signal.
-
-alter table public.products
-  add column if not exists status      text not null default 'active',
-  add column if not exists archived_at timestamptz;
-
-alter table public.products
-  drop constraint if exists products_status_check,
-  add constraint products_status_check check (status in ('active', 'unlisted', 'archived'));
-
--- The catalogue reads active-only on every page, so this index carries the
--- storefront's hottest query.
-create index if not exists products_status_idx on public.products (status)
-  where status = 'active';
-
-comment on column public.products.status is
-  'active = listed and buyable; unlisted = direct link only; archived = retired, kept for order history.';
-
--- Stamp the moment of retirement, so "when did we stop selling this" is
--- answerable later.
-create or replace function public.set_product_archived_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  if new.status = 'archived' and (old.status is distinct from 'archived') then
-    new.archived_at := now();
-  elsif new.status <> 'archived' then
-    new.archived_at := null;
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists products_archived_at on public.products;
-create trigger products_archived_at
-before update of status on public.products
-for each row execute procedure public.set_product_archived_at();
-
 
